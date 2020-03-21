@@ -1,47 +1,13 @@
 version: "3"
 
-services: 
-  worker:
+services:
+  server:
     build: ./
     container_name: dashboard_worker
-    restart: always
-    volumes: 
+    volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    depends_on: 
-      - kafka
     environment:
-      # TODO - make it possible to upload to kafka or to a database... (nosql - no need to support relational data)
+      # TODO - make it possible to upload to kafka or to a database... (nosql)
       DATA_UPLOAD: kafka
       KAFKA_TOPIC: test
-      KAFKA_URL: kafka:9093
-
-  zookeeeper:
-    image: cfei/zookeeper
-    container_name: zookeeper
-    restart: always
-    ports:
-      - "2181:2181"
-      - "2888:2888"
-      - "3888:3888"
-    environment:
-      ZOO_ID: 1
-      ZOO_PORT: 2181
-
-  kafka:
-    image: cfei/kafka
-    container_name: kafka
-    restart: always
-    ports:
-      - "9092:9092"
-      - "9093:9093"
-    volumes:
-      - ../data:/kafka
-    depends_on: 
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,EXTERNAL://kafka:9092
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9092
-      KAFKA_HEAP_OPTS: "-Xmx3G"
+      KAFKA_URL: kafka2.cfei.dk:9093

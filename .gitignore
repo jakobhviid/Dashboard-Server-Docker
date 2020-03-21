@@ -3,3 +3,5 @@ node_modules
 *.iml
 .DS_Store
 python_env
+.vscode
+__pycache__

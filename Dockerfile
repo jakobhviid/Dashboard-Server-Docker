@@ -9,12 +9,14 @@ RUN apt update && \
 # Copy necessary scripts + configuration
 COPY scripts /tmp/
 RUN chmod +x /tmp/*.sh && \
-    chmod +x /tmp/*.py && \
     mv /tmp/* /usr/bin && \
     rm -rf /tmp/*
 
+ENV PYTHON_SCRIPTS_HOME=/opt/python_scripts
 
+COPY updaters ${PYTHON_SCRIPTS_HOME}
+RUN chmod +x ${PYTHON_SCRIPTS_HOME}/*.py
 
-ENTRYPOINT [ "docker-entrypoint.sh" ]
+# ENTRYPOINT [ "docker-entrypoint.sh" ]
 
-CMD ["get_status"]
+CMD [ "docker-entrypoint.sh", "get_status"]

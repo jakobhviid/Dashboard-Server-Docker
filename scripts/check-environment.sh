@@ -13,19 +13,19 @@ if [ -z "$DATA_UPLOAD" ]; then
     exit 1
 else
     if [ "$DATA_UPLOAD" == kafka ]; then
-        if [ -z "$KAFKA_TOPIC" || -z "$KAFKA_URL" ]; then
+        if [[ (-z "$KAFKA_TOPIC") || (-z "$KAFKA_URL") ]]; then
             echo -e "\e[1;32mERROR - KAFKA_TOPIC and KAFKA_URL must be set! \e[0m"
             exit 1
         fi
     fi
 
-    if [ "$DATA_UPLOAD" == mongodb ]; then
+    # if [ "$DATA_UPLOAD" == mongodb ]; then
 
-    fi
+    # fi
 
-    if [ "$DATA_UPLOAD" == cassandra ]; then
+    # if [ "$DATA_UPLOAD" == cassandra ]; then
 
-    fi
+    # fi
 
-    echo "DATA_UPLOAD value is not currently supported, please contact maintainer of this image"
+    # echo "DATA_UPLOAD value is not currently supported, please contact maintainer of this image"
 fi

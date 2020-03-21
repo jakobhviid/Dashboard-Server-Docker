@@ -8,22 +8,14 @@ set -eo pipefail
 
 check-environment.sh
 
-# The first parameter is the url to curl
-function docker_curl() {
-    return curl --max-time "${CURL_TIMEOUT}" --silent --unix-socket "$DOCKER_SOCK" "$1" || return 1
-}
-
 # How often information should be fetched and sent to kafka
 INTERVAL=${INTERVAL:-10}
 
 function get_status() {
-
-    echo "INFO - Monitoring Status Every " "$INTERVAL" " Seconds"
-    while true; do
-        docker-status.py
-        sleep $INTERVAL
-    done
-
+    echo "INFO - Monitoring Status Every" "$INTERVAL" "Seconds"
+    if [[ "$DATA_UPLOAD" == kafka ]]; then
+        python3 "$PYTHON_SCRIPTS_HOME"/docker-status-kafka.py "$INTERVAL"
+    fi
 }
 
 function health() {
