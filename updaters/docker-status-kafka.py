@@ -2,71 +2,116 @@ import docker
 import os
 import sys
 import time
-from kafka import KafkaProducer
 from kafka import errors
+from classes import container_overview_info
+from classes import container_stats_info
+import helpers
 import json
 
 docker_client = docker.from_env()
+servername = os.environ.get('SERVER_NAME')
+
+containers_overview = {
+    "servername": servername,
+    "containers": []
+}
+
+containers_stats = {
+    "servername": servername,
+    "containers": []
+}
 
 
-class ContainerInfo:
-    def __init__(self, container_id, name):
-        self.container_id = container_id
-        self.name = name
-
-    def with_image_tags(self, image_tags):
-        self.image_tags = image_tags
-        return self
-
-    def with_state(self, state):
-        status = state['Status']
-
-        startTime = state['StartedAt']
-        finishTime = state['FinishedAt']
-
-        self.state = {
-            'status': status, 'startTime': startTime, 'finishTime': finishTime
-        }
-
-        return self
-
-    def with_creation_time(self, created):
-        self.creation_time = created
-        return self
+def serialize(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    return obj.__dict__
 
 
-def send_data_to_kafka(producer, topic):
-    containers = docker_client.containers.list(all, json)
-
+def send_overview_data_to_kafka(producer, topic):
     # TODO Figure out your own ID so you don't send information about yourself
-    for container in containers:
-        relevant_data = ContainerInfo(
-            container.short_id, container.name)
+    all_containers = docker_client.containers.list(all)
 
-        if container.image.tags:
-            relevant_data.with_image_tags(container.image.tags)
+    for c in all_containers:
+        # Retrieve general overview data from the container
+        container_overview_data = container_overview_info.ContainerOverviewInfo(
+            c.short_id, c.name)
 
-        relevant_data.with_state(container.attrs['State'])
+        container_overview_data.with_image_tags(c.image.tags)
 
-        producer.send(topic, json.dumps(relevant_data.__dict__))
+        container_overview_data.with_state(c.attrs['State'])
+
+        container_overview_data.with_creation_time(c.attrs['Created'])
+
+        helpers.replace_or_add_container_in_list(
+            containers_overview['containers'], container_overview_data)
+
+    producer.send(topic, json.dumps(containers_overview, default=serialize))
 
 
-def create_producer():
-    # kafka_url = os.environ.get("KAFKA_URL")
-    kafka_url = 'kafka2.cfei.dk:9093'
-    return KafkaProducer(
-        bootstrap_servers=kafka_url, value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+def send_stats_data_to_kafka(producer, topic):
+    running_containers = docker_client.containers.list()
+    for c in running_containers:
+        # Retrieve stats data from the container
+        container_stats_data = container_stats_info.ContainerStatsInfo(
+            c.short_id, c.name)
+        container_stats = c.stats(stream=False)
+
+        previous_container = None
+        for container in containers_stats['containers']:
+            if container.id == c.short_id:
+                previous_container = container
+
+        container_stats_data.with_cpu(
+            container_stats['cpu_stats']['cpu_usage']['total_usage'],
+            len(container_stats['cpu_stats']['cpu_usage']['percpu_usage']),
+            container_stats['cpu_stats']['system_cpu_usage'], previous_container)
+
+        container_stats_data.with_memory(
+            container_stats['memory_stats']['limit'], container_stats['memory_stats']['usage'])
+
+        # RX Bytes = total number of bytes recieved over a network interface
+        # TX Bytes = total number of bytes transmitted over a network interface
+        total_rx_bytes = 0
+        total_tx_bytes = 0
+        for network in container_stats['networks']:
+            total_rx_bytes = total_rx_bytes + \
+                container_stats['networks'][network]['rx_bytes']
+            total_tx_bytes = total_tx_bytes + \
+                container_stats['networks'][network]['tx_bytes']
+
+        container_stats_data.with_net_i_o(total_rx_bytes, total_tx_bytes)
+
+        total_disk_read_bytes = 0
+        total_disk_write_bytes = 0
+        for io_operation in container_stats['blkio_stats']['io_service_bytes_recursive']:
+            operation_type = io_operation['op']
+            operation_value_bytes = io_operation['value']
+            if operation_type == 'Read':
+                total_disk_read_bytes = total_disk_read_bytes + operation_value_bytes
+            elif operation_type == 'Write':
+                total_disk_write_bytes = total_disk_write_bytes + operation_value_bytes
+
+        container_stats_data.with_disk_i_o(
+            total_disk_read_bytes, total_disk_write_bytes)
+
+        helpers.replace_or_add_container_in_list(
+            containers_stats['containers'], container_stats_data)
+
+    producer.send(topic, json.dumps(containers_stats, default=serialize))
 
 
 try:
-    producer = create_producer()
+    producer = helpers.create_producer()
+
     # The script requires one argument when run - how often data should be send
-    # interval_delay = int(sys.argv[1])
-    # kafka_topic = os.environ.get("KAFKA_TOPIC")
-    kafka_topic = 'test'
+    interval_delay = int(sys.argv[1])
+
+    overview_topic = 'general_info'
+    stats_topic = "stats_info"
     while True:
-        send_data_to_kafka(producer, kafka_topic)
-        time.sleep(5)
+        send_overview_data_to_kafka(producer, overview_topic)
+        send_stats_data_to_kafka(producer, stats_topic)
+        time.sleep(interval_delay)
 
 except errors.NoBrokersAvailable:
     print('No brokers available')

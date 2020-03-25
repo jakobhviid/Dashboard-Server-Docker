@@ -18,12 +18,6 @@ function get_status() {
     fi
 }
 
-function health() {
-    # TODO - Auto restart unhealthy containers
-    echo "INFO - Monitoring Health Every " "$INTERVAL" " Seconds"
-    return 0
-}
-
 # Check if the function exists
 if declare -f "$1" >/dev/null; then
     # call the function

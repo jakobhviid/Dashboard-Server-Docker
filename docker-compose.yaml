@@ -7,7 +7,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      # TODO - make it possible to upload to kafka or to a database... (nosql)
       DATA_UPLOAD: kafka
+      SERVER_NAME: OliversMBP
       KAFKA_TOPIC: test
       KAFKA_URL: kafka2.cfei.dk:9093

@@ -8,6 +8,11 @@ if [ ! -S "$DOCKER_SOCKET_PATH" ]; then
     exit 1
 fi
 
+if [ -z "$SERVER_NAME" ]; then
+    echo -e "\e[1;32mERROR - Server identifying name has not been provided! \e[0m"
+    exit 1
+fi
+
 if [ -z "$DATA_UPLOAD" ]; then
     echo -e "\e[1;32mERROR - DATA_UPLOAD must be set to either 'kafka', 'mongodb' or 'cassandra' \e[0m"
     exit 1
