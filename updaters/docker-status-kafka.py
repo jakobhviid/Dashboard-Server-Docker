@@ -50,6 +50,15 @@ def send_overview_data_to_kafka(producer, topic):
 
 def send_stats_data_to_kafka(producer, topic):
     running_containers = docker_client.containers.list()
+    for i, previous_container in enumerate(containers_stats['containers']):
+        container_still_running = False
+        for c in running_containers:
+            if previous_container.id == c.short_id:
+                container_still_running = True
+                break
+        if not container_still_running:
+            containers_stats['containers'].pop(i)
+
     for c in running_containers:
         # Retrieve stats data from the container
         container_stats_data = container_stats_info.ContainerStatsInfo(
@@ -105,7 +114,6 @@ try:
 
     # The script requires one argument when run - how often data should be send
     interval_delay = int(sys.argv[1])
-
     overview_topic = 'general_info'
     stats_topic = "stats_info"
     while True:

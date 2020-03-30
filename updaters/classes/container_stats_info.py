@@ -15,22 +15,6 @@ def calculate_cpu_percent(container_id, container_cpu_usage, num_of_cpu, system_
     return round(cpu_percent, 2)
 
 
-kilobyte_size = 1000
-megabyte_size = kilobyte_size*kilobyte_size
-gigabyte_size = megabyte_size * kilobyte_size
-
-
-def calculate_appropiate_byte_type(bytes):
-    num_digits = len(str(bytes))
-    # kilobytes
-    if num_digits <= len(str(kilobyte_size)) + 1:
-        return str(round((bytes / kilobyte_size), 1)) + " KB"
-    elif num_digits <= len(str(megabyte_size)) + 1:
-        return str(round((bytes / megabyte_size), 1)) + " MB"
-    elif num_digits <= len(str(gigabyte_size)) + 1:
-        return str(round((bytes / gigabyte_size), 1)) + "GB"
-
-
 class ContainerStatsInfo:
     def __init__(self, container_id, name):
         self.id = container_id
@@ -45,14 +29,12 @@ class ContainerStatsInfo:
 
     def with_memory(self, memory_limit, memory_usage):
         memory_percent = (memory_usage / memory_limit) * 100
-        self.memory_percent = round(memory_percent, 2)
+        self.memory_percentage = round(memory_percent, 2)
 
     def with_net_i_o(self, input_bytes, output_bytes):
-        input = calculate_appropiate_byte_type(input_bytes)
-        output = calculate_appropiate_byte_type(output_bytes)
-        self.net = input + " / " + output
+        self.net_input_bytes = input_bytes
+        self.net_output_bytes = output_bytes
 
     def with_disk_i_o(self, input_bytes, output_bytes):
-        input = calculate_appropiate_byte_type(input_bytes)
-        output = calculate_appropiate_byte_type(output_bytes)
-        self.disk = input + " / " + output
+        self.disk_input_bytes = input_bytes
+        self.disk_output_bytes = output_bytes

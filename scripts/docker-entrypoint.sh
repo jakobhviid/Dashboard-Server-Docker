@@ -18,12 +18,21 @@ function get_status() {
     fi
 }
 
+function test() {
+    echo "I am just a simple test for multiple commands"
+}
+
 # Check if the function exists
-if declare -f "$1" >/dev/null; then
-    # call the function
-    "$@"
-else
-    # Show a helpful error
-    echo "ERROR - '$1' is not a known function name" >&2
-    exit 1
-fi
+for argument in "$@"; do
+    if declare -f "$argument" >/dev/null; then
+        # call the function
+        echo "INFO - Running '$argument'"
+        "$argument" &>>/out.log &
+    else
+        echo "INFO - Supplied command '$argument' is not a valid command for this container (ignore this if you are debugging the container)"
+        exec "$argument"
+        break
+    fi
+done
+
+tail -f /out.log
