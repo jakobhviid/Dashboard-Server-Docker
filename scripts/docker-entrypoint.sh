@@ -4,8 +4,6 @@
 # Prevents errors in a pipeline from being hidden. So if any command fails, that return code will be used as the return code of the whole pipeline
 set -eo pipefail
 
-# TODO - Start a http server which can take commands from the outside (run a container, stop a container etc)
-
 check-environment.sh
 
 # How often information should be fetched and sent to kafka
@@ -14,12 +12,13 @@ INTERVAL=${INTERVAL:-10}
 function get_status() {
     echo "INFO - Monitoring Status Every" "$INTERVAL" "Seconds"
     if [[ "$DATA_UPLOAD" == kafka ]]; then
-        python3 "$PYTHON_SCRIPTS_HOME"/docker-status-kafka.py "$INTERVAL"
+        python3 "$UPDATERS_HOME"/docker_status_kafka.py "$INTERVAL"
     fi
 }
 
-function test() {
-    echo "I am just a simple test for multiple commands"
+function command_server() {
+    echo "INFO - Starting command server"
+    python3 "$SERVER_HOME"/src/command_server.py
 }
 
 # Check if the function exists

@@ -1,8 +1,7 @@
 FROM ubuntu:18.04
 
 RUN apt update && \
-    apt install -y jq curl python3 python3-pip && \
-    pip3 install docker kafka-python
+    apt install -y curl python3 python3-pip
 
 # Copy necessary scripts + configuration
 COPY scripts /tmp/
@@ -10,10 +9,13 @@ RUN chmod +x /tmp/*.sh && \
     mv /tmp/* /usr/bin && \
     rm -rf /tmp/*
 
-ENV PYTHON_SCRIPTS_HOME=/opt/python_scripts
+ENV UPDATERS_HOME=/opt/updaters
+ENV SERVER_HOME=/opt/command_server
 
-COPY updaters ${PYTHON_SCRIPTS_HOME}
-RUN chmod +x ${PYTHON_SCRIPTS_HOME}/*.py
+COPY updaters ${UPDATERS_HOME}
+COPY command_server ${SERVER_HOME}
+
+RUN pip3 install docker kafka-python flask
 
 ENTRYPOINT [ "docker-entrypoint.sh" ]
 
