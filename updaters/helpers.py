@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from kafka import KafkaProducer
 import os
 import json
@@ -17,6 +19,9 @@ def replace_or_add_container_in_list(containers, container_to_add):
 
 
 def create_producer():
-    kafka_url = os.environ.get("KAFKA_URL")
+    # kafka_urls = os.environ.get("KAFKA_URLS")
+    kafka_urls = "kafka2.cfei.dk:9092,kafka3.cfei.dk:9092"
+    kafka_urls = kafka_urls.split(",")
+    print(kafka_urls)
     return KafkaProducer(
-        bootstrap_servers=kafka_url, value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+        bootstrap_servers=kafka_urls, value_serializer=lambda v: json.dumps(v).encode('utf-8'))

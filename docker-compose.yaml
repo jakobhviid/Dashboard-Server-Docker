@@ -4,14 +4,14 @@ services:
   server:
     image: omvk97/dashboard
     container_name: dashboard_worker
-    command: get_status command_server
     ports:
       - 5000:5000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
+      PROCESSES_TO_START: get_status,command_server
       DATA_UPLOAD: kafka
       SERVER_NAME: OliversMBP
       KAFKA_TOPIC: test
-      KAFKA_URL: kafka2.cfei.dk:9093
+      KAFKA_URLS: kafka2.cfei.dk:9092,kafka3.cfei.dk:9092
       INTERVAL: 5

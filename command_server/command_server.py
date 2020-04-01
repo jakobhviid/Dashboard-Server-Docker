@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 from app import app
 from flask import request
@@ -48,6 +48,20 @@ def stop_container():
             **requst_validation_result[1])
         container_to_stop.stop(timeout=6)
         return Response(json.dumps({'message': 'Container stopped'}), status=200, mimetype='application/json')
+    except docker.errors.NotFound:
+        return Response(json.dumps({'message': 'Container not found'}), status=404, mimetype='application/json')
+
+
+@app.route('/remove-container', methods=['POST'])
+def remove_container():
+    requst_validation_result = check_request('remove-container')
+    if requst_validation_result[0] == -1:
+        return requst_validation_result[1]
+    try:
+        container_to_stop = docker_client.containers.get(
+            **requst_validation_result[1])
+        container_to_stop.remove(force=True)
+        return Response(json.dumps({'message': 'Container removed'}), status=200, mimetype='application/json')
     except docker.errors.NotFound:
         return Response(json.dumps({'message': 'Container not found'}), status=404, mimetype='application/json')
 

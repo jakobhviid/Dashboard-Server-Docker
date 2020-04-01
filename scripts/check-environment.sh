@@ -18,7 +18,7 @@ if [ -z "$DATA_UPLOAD" ]; then
     exit 1
 else
     if [ "$DATA_UPLOAD" == kafka ]; then
-        if [[ (-z "$KAFKA_TOPIC") || (-z "$KAFKA_URL") ]]; then
+        if [[ (-z "$KAFKA_TOPIC") || (-z "$KAFKA_URLS") ]]; then
             echo -e "\e[1;32mERROR - KAFKA_TOPIC and KAFKA_URL must be set! \e[0m"
             exit 1
         fi

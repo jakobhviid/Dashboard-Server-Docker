@@ -1,7 +1,10 @@
 FROM ubuntu:18.04
 
 RUN apt update && \
-    apt install -y curl python3 python3-pip
+    apt install -y curl python3 python3-pip supervisor
+
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 
 # Copy necessary scripts + configuration
 COPY scripts /tmp/
@@ -15,8 +18,8 @@ ENV SERVER_HOME=/opt/command_server
 COPY updaters ${UPDATERS_HOME}
 COPY command_server ${SERVER_HOME}
 
-RUN pip3 install docker kafka-python flask
+RUN chmod -R +x ${UPDATERS_HOME}/*.py && \
+    chmod -R +x ${SERVER_HOME}/*.py && \
+    pip3 install docker kafka-python flask
 
-ENTRYPOINT [ "docker-entrypoint.sh" ]
-
-CMD [ "get_status"]
+CMD [ "docker-entrypoint.sh" ]

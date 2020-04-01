@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import docker
 import os
 import sys
@@ -5,11 +7,15 @@ import time
 from kafka import errors
 from classes import container_overview_info
 from classes import container_stats_info
+from classes import output_colors
 import helpers
 import json
+import socket
+import logging
 
 docker_client = docker.from_env()
-servername = os.environ.get('SERVER_NAME')
+# servername = os.environ.get('SERVER_NAME')
+servername = "OliversMBPStation"
 
 containers_overview = {
     "servername": servername,
@@ -27,16 +33,29 @@ def serialize(obj):
     return obj.__dict__
 
 
+def remove_self(containers):
+    # socket.gethostname returns the first 12 characters of the full container id, short_id is only 10 characters long of the full id
+    container_id = (socket.gethostname())[:10]
+    for i, c in enumerate(containers):
+        if c.short_id == container_id:
+            containers.pop(i)
+
+
 def send_overview_data_to_kafka(producer, topic):
-    # TODO Figure out your own ID so you don't send information about yourself
     all_containers = docker_client.containers.list(all)
 
+    remove_self(all_containers)
+
+    # Filter out this containers id, so information about this container is not sent
     for c in all_containers:
         # Retrieve general overview data from the container
         container_overview_data = container_overview_info.ContainerOverviewInfo(
             c.short_id, c.name)
 
-        container_overview_data.with_image_tags(c.image.tags)
+        try:
+            container_overview_data.with_image_tags(c.image.tags)
+        except IndexError:  # if there is no image, continue anyway
+            pass
 
         container_overview_data.with_state(c.attrs['State'])
 
@@ -50,6 +69,9 @@ def send_overview_data_to_kafka(producer, topic):
 
 def send_stats_data_to_kafka(producer, topic):
     running_containers = docker_client.containers.list()
+
+    remove_self(running_containers)
+    
     for i, previous_container in enumerate(containers_stats['containers']):
         container_still_running = False
         for c in running_containers:
@@ -109,24 +131,33 @@ def send_stats_data_to_kafka(producer, topic):
     producer.send(topic, json.dumps(containers_stats, default=serialize))
 
 
-try:
-    producer = helpers.create_producer()
+def main():
+    try:
+        producer = helpers.create_producer()
 
-    # The script requires one argument when run - how often data should be send
-    interval_delay = int(sys.argv[1])
-    overview_topic = 'general_info'
-    stats_topic = "stats_info"
-    while True:
-        send_overview_data_to_kafka(producer, overview_topic)
-        send_stats_data_to_kafka(producer, stats_topic)
-        time.sleep(interval_delay)
+        # The script requires one argument when run - how often data should be send
+        # interval_delay = int(sys.argv[1])
+        interval_delay = 5
+        # TODO - make these into environment variables
+        overview_topic = 'general_info'
+        stats_topic = "stats_info"
+        print('Sending data every', interval_delay, "seconds", flush=True)
+        while True:
+            send_overview_data_to_kafka(producer, overview_topic)
+            send_stats_data_to_kafka(producer, stats_topic)
+            time.sleep(interval_delay)
 
-except errors.NoBrokersAvailable:
-    print('No brokers available')
-    sys.exit(100)
-except ValueError:
-    print('Invalid interval delay argument!')
-    sys.exit(1)
-except errors.KafkaTimeoutError:
-    print('Could not connect to Kafka')
-    sys.exit(1)
+    except errors.NoBrokersAvailable:
+        print(output_colors.outputcolors.FAIL + 'No brokers available')
+        sys.exit(1)
+    except ValueError:
+        print(output_colors.outputcolors.FAIL +
+              'Invalid interval delay argument!')
+        sys.exit(1)
+    except errors.KafkaTimeoutError:
+        print(output_colors.outputcolors.FAIL + 'Could not connect to Kafka')
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
