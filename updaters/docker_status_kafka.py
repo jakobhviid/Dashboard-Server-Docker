@@ -12,20 +12,23 @@ import helpers
 import json
 import socket
 import logging
+from threading import Thread
+
 
 docker_client = docker.from_env()
 # servername = os.environ.get('SERVER_NAME')
 servername = "OliversMBPStation"
 
-containers_overview = {
-    "servername": servername,
-    "containers": []
-}
-
 containers_stats = {
     "servername": servername,
     "containers": []
 }
+
+# If command server has been started it's required for ADVERTISED_COMMAND_URL environment to be set. If it's not started advertised_command_url will be None.
+advertised_command_url = os.environ.get('ADVERTISED_COMMAND_URL', None)
+if advertised_command_url is not None:
+    print('Tester', advertised_command_url, flush=True)
+    containers_stats['actionURL'] = advertised_command_url
 
 
 def serialize(obj):
@@ -42,11 +45,18 @@ def remove_self(containers):
 
 
 def send_overview_data_to_kafka(producer, topic):
+    containers_overview = {
+        "servername": servername,
+        "containers": []
+    }
+    if advertised_command_url is not None:
+        containers_overview['actionURL'] = advertised_command_url
+
     all_containers = docker_client.containers.list(all)
 
+    # Filter out this containers id, so information about this container is not sent
     remove_self(all_containers)
 
-    # Filter out this containers id, so information about this container is not sent
     for c in all_containers:
         # Retrieve general overview data from the container
         container_overview_data = container_overview_info.ContainerOverviewInfo(
@@ -71,7 +81,7 @@ def send_stats_data_to_kafka(producer, topic):
     running_containers = docker_client.containers.list()
 
     remove_self(running_containers)
-    
+
     for i, previous_container in enumerate(containers_stats['containers']):
         container_still_running = False
         for c in running_containers:
@@ -127,7 +137,6 @@ def send_stats_data_to_kafka(producer, topic):
 
         helpers.replace_or_add_container_in_list(
             containers_stats['containers'], container_stats_data)
-
     producer.send(topic, json.dumps(containers_stats, default=serialize))
 
 
@@ -143,8 +152,12 @@ def main():
         stats_topic = "stats_info"
         print('Sending data every', interval_delay, "seconds", flush=True)
         while True:
-            send_overview_data_to_kafka(producer, overview_topic)
-            send_stats_data_to_kafka(producer, stats_topic)
+            overview_thread = Thread(
+                target=send_overview_data_to_kafka, args=(producer, overview_topic))
+            stats_thread = Thread(target=send_stats_data_to_kafka,
+                                  args=(producer, stats_topic))
+            overview_thread.start()
+            stats_thread.start()
             time.sleep(interval_delay)
 
     except errors.NoBrokersAvailable:

@@ -10,6 +10,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       PROCESSES_TO_START: get_status,command_server
+      ADVERTISED_COMMAND_URL: http://127.0.0.1:5000
       DATA_UPLOAD: kafka
       SERVER_NAME: OliversMBP
       KAFKA_TOPIC: test

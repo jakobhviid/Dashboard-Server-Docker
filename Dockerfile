@@ -20,6 +20,6 @@ COPY command_server ${SERVER_HOME}
 
 RUN chmod -R +x ${UPDATERS_HOME}/*.py && \
     chmod -R +x ${SERVER_HOME}/*.py && \
-    pip3 install docker kafka-python flask
+    pip3 install docker kafka-python flask flask-cors
 
-CMD [ "docker-entrypoint.sh" ]
+CMD [ "/usr/bin/supervisord" ]

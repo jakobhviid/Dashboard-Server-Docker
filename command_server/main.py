@@ -38,6 +38,21 @@ def run_container():
                         mimetype='application/json')
 
 
+@app.route('/start-container', methods=['POST'])
+def start_container():
+    requst_validation_result = check_request('start-container')
+    if requst_validation_result[0] == -1:
+        return requst_validation_result[1]
+
+    try:
+        container_to_start = docker_client.containers.get(
+            **requst_validation_result[1])
+        container_to_start.start()
+        return Response(json.dumps({'message': 'Container started'}), status=200, mimetype='application/json')
+    except docker.errors.NotFound:
+        return Response(json.dumps({'message': 'Container not found'}), status=404, mimetype='application/json')
+
+
 @app.route('/stop-container', methods=['POST'])
 def stop_container():
     requst_validation_result = check_request('stop-container')
@@ -62,21 +77,6 @@ def remove_container():
             **requst_validation_result[1])
         container_to_stop.remove(force=True)
         return Response(json.dumps({'message': 'Container removed'}), status=200, mimetype='application/json')
-    except docker.errors.NotFound:
-        return Response(json.dumps({'message': 'Container not found'}), status=404, mimetype='application/json')
-
-
-@app.route('/start-container', methods=['POST'])
-def start_container():
-    requst_validation_result = check_request('start-container')
-    if requst_validation_result[0] == -1:
-        return requst_validation_result[1]
-
-    try:
-        container_to_start = docker_client.containers.get(
-            **requst_validation_result[1])
-        container_to_start.start()
-        return Response(json.dumps({'message': 'Container started'}), status=200, mimetype='application/json')
     except docker.errors.NotFound:
         return Response(json.dumps({'message': 'Container not found'}), status=404, mimetype='application/json')
 
@@ -135,6 +135,9 @@ def update_configuration():
         return Response(json.dumps({'message': 'Container not found'}), status=404, mimetype='application/json')
     except docker.errors.APIError as err:
         return Response(json.dumps({'message': err.explanation}), status=err.response.status_code,
+                        mimetype='application/json')
+    except docker.errors.DockerException as err:
+        return Response(json.dumps({'message': 'Something Went Wrong'}), status=500,
                         mimetype='application/json')
 
 
