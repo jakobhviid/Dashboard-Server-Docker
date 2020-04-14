@@ -19,8 +19,8 @@ def replace_or_add_container_in_list(containers, container_to_add):
 
 
 def create_producer():
-    # kafka_urls = os.environ.get("KAFKA_URLS")
-    kafka_urls = "kafka2.cfei.dk:9092,kafka3.cfei.dk:9092"
+    kafka_urls = os.environ.get("KAFKA_URLS")
+    # kafka_urls = "kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092"
     kafka_urls = kafka_urls.split(",")
     print(kafka_urls)
     return KafkaProducer(

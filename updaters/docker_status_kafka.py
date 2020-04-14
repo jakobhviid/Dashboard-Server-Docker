@@ -16,8 +16,8 @@ from threading import Thread
 
 
 docker_client = docker.from_env()
-# servername = os.environ.get('SERVER_NAME')
-servername = "OliversMBPStation"
+servername = os.environ.get('SERVER_NAME')
+# servername = "OliversMBPStation"
 
 containers_stats = {
     "servername": servername,
@@ -27,7 +27,6 @@ containers_stats = {
 # If command server has been started it's required for ADVERTISED_COMMAND_URL environment to be set. If it's not started advertised_command_url will be None.
 advertised_command_url = os.environ.get('ADVERTISED_COMMAND_URL', None)
 if advertised_command_url is not None:
-    print('Tester', advertised_command_url, flush=True)
     containers_stats['actionURL'] = advertised_command_url
 
 
@@ -58,21 +57,23 @@ def send_overview_data_to_kafka(producer, topic):
     remove_self(all_containers)
 
     for c in all_containers:
-        # Retrieve general overview data from the container
-        container_overview_data = container_overview_info.ContainerOverviewInfo(
-            c.short_id, c.name)
+        status = c.status
+        if status == 'exited' or status == 'running': # Don't send info about containers which haven't been configured correctly and therefore never run
+            # Retrieve general overview data from the container
+            container_overview_data = container_overview_info.ContainerOverviewInfo(
+                c.short_id, c.name)
 
-        try:
-            container_overview_data.with_image_tags(c.image.tags)
-        except IndexError:  # if there is no image, continue anyway
-            pass
+            try:
+                container_overview_data.with_image_tags(c.image.tags)
+            except IndexError:  # if there is no image, continue anyway
+                pass
 
-        container_overview_data.with_state(c.attrs['State'])
+            container_overview_data.with_state(c.attrs['State'])
 
-        container_overview_data.with_creation_time(c.attrs['Created'])
+            container_overview_data.with_creation_time(c.attrs['Created'])
 
-        helpers.replace_or_add_container_in_list(
-            containers_overview['containers'], container_overview_data)
+            helpers.replace_or_add_container_in_list(
+                containers_overview['containers'], container_overview_data)
 
     producer.send(topic, json.dumps(containers_overview, default=serialize))
 
@@ -144,12 +145,11 @@ def main():
     try:
         producer = helpers.create_producer()
 
-        # The script requires one argument when run - how often data should be send
-        # interval_delay = int(sys.argv[1])
-        interval_delay = 5
-        # TODO - make these into environment variables
-        overview_topic = 'general_info'
-        stats_topic = "stats_info"
+        # The script requires one argument when run - how often data should be sent
+        interval_delay = int(sys.argv[1])
+        # interval_delay = 5
+        overview_topic = '0913c91b-ec2b-4b69-ad8c-d9c8d25f1464-general_info'
+        stats_topic = "0913c91b-ec2b-4b69-ad8c-d9c8d25f1464-stats_info"
         print('Sending data every', interval_delay, "seconds", flush=True)
         while True:
             overview_thread = Thread(

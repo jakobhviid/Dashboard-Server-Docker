@@ -15,6 +15,13 @@ class ContainerOverviewInfo:
         self.state = {
             'status': status, 'startTime': startTime, 'finishTime': finishTime
         }
+        if 'Health' in state:
+            del state['Health']['Log']
+            self.state['health'] = state['Health']
+            # lowercase dictionary keys fix
+            self.state['health']['status'] = self.state['health'].pop('Status')
+            self.state['health']['failingStreak'] = self.state['health'].pop(
+                'FailingStreak')
 
     def with_creation_time(self, created):
         self.creation_time = created

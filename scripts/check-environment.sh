@@ -14,12 +14,12 @@ if [ -z "$SERVER_NAME" ]; then
 fi
 
 if [ -z "$DATA_UPLOAD" ]; then
-    echo -e "\e[1;32mERROR - DATA_UPLOAD must be set to either 'kafka', 'mongodb' or 'cassandra' \e[0m"
+    echo -e "\e[1;32mERROR - 'DATA_UPLOAD' must be set to either 'kafka', 'mongodb' or 'cassandra' \e[0m"
     exit 1
 else
     if [ "$DATA_UPLOAD" == kafka ]; then
-        if [[ (-z "$KAFKA_TOPIC") || (-z "$KAFKA_URLS") ]]; then
-            echo -e "\e[1;32mERROR - KAFKA_TOPIC and KAFKA_URL must be set! \e[0m"
+        if [[ (-z "$KAFKA_URLS") ]]; then
+            echo -e "\e[1;32mERROR - 'KAFKA_URL' must be set! \e[0m"
             exit 1
         fi
     fi
