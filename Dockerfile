@@ -8,7 +8,7 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Copy necessary scripts + configuration
 COPY scripts /tmp/
-RUN chmod +x /tmp/*.sh && \
+RUN chmod +x /tmp/*.sh && chmod +x /tmp/*.py && \
     mv /tmp/* /usr/bin && \
     rm -rf /tmp/*
 
