@@ -8,6 +8,8 @@ docker_client = docker.from_env()
 try:
     container_id = sys.argv[1]
     new_name = sys.argv[2]
+    print(container_id)
+    print(new_name)
     container_to_restart = docker_client.containers.get(container_id=container_id)
     container_to_restart.rename(new_name)
 except docker.errors.NotFound:
