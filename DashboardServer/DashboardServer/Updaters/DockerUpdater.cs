@@ -28,24 +28,24 @@ namespace DashboardServer.Updaters
             ContractResolver = new CamelCasePropertyNamesContractResolver()
         };
 
-        public async static Task Start()
+        public static void Start()
         {
             var producerConfig = new ProducerConfig { BootstrapServers = _bootstrapServers, Acks = Acks.Leader };
             using var p = new ProducerBuilder<Null, string>(producerConfig).Build();
 
-            List<Task> tester = new List<Task>();
+            Task[] tester = new Task[2];
             if (_processesToStart.Contains("overviewdata"))
             {
                 var overviewTask = SendOverViewData(p);
-                tester.Add(overviewTask);
+                tester[0] = overviewTask;
             }
             if (_processesToStart.Contains("statsdata"))
             {
                 var statsTask = SendStatsData(p);
-                tester.Add(statsTask);
+                tester[1] = statsTask;
             }
 
-            await Task.WhenAll(tester);
+            Task.WaitAll(tester);
         }
 
         private struct OverViewData
@@ -58,9 +58,9 @@ namespace DashboardServer.Updaters
 
         private static async Task SendOverViewData(IProducer<Null, string> p)
         {
+            Console.WriteLine("Sending overview data every " + _intervalDelay + " seconds");
             while (true)
             {
-                Console.WriteLine("Sending overview data every " + _intervalDelay + " seconds");
                 var containers = await _client.Containers.ListContainersAsync(
                     new ContainersListParameters
                     {
@@ -91,7 +91,7 @@ namespace DashboardServer.Updaters
                     Containers = containerData
                 };
 
-                if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provice the relevant topics
+                if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
                 {
                     dataToSend.CommandRequestTopic = _servername + _selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
                     dataToSend.CommandResponseTopic = _servername + _selfContainerId + "command-requests";
@@ -111,17 +111,17 @@ namespace DashboardServer.Updaters
         }
         private static async Task SendStatsData(IProducer<Null, string> p)
         {
+            Console.WriteLine("Sending stats data every " + _intervalDelay + " seconds");
             while (true)
             {
-                Console.WriteLine("Sending stats data every " + _intervalDelay + " seconds");
                 var containers = await _client.Containers.ListContainersAsync(new ContainersListParameters());
-                CancellationTokenSource cancellation = new CancellationTokenSource();
 
                 var containerData = new List<StatsContainerData>();
 
                 foreach (var container in containers)
                 {
                     if (container.ID[..10] == _selfContainerId)continue;
+                    CancellationTokenSource cancellation = new CancellationTokenSource();
                     var responseHandler = new Progress<ContainerStatsResponse>(delegate(ContainerStatsResponse ctr)
                     {
                         if (ctr.PreCPUStats.SystemUsage == 0)return; // it should read stats twice before it's possible to read the relevant data
@@ -149,24 +149,23 @@ namespace DashboardServer.Updaters
                             cancellation.Cancel(); // Only read twice every interval for cpu usage calculation
                         }
                     });
-                    // Start a stream of stats which will get closed after reading twice
-                    await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { }, responseHandler, cancellation.Token);
-
-                    var dataToSend = new StatsData
-                    {
-                        Servername = _servername,
-                        Containers = containerData,
-                    };
-
-                    if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provice the relevant topics
-                    {
-                        dataToSend.CommandRequestTopic = _servername + _selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
-                        dataToSend.CommandResponseTopic = _servername + _selfContainerId + "command-requests";
-                    }
-
-                    SendMessage(_statsTopic, dataToSend, p);
-                    await Task.Delay(TimeSpan.FromSeconds(_intervalDelay));
+                    await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { Stream = false }, responseHandler, cancellation.Token);
                 }
+
+                var dataToSend = new StatsData
+                {
+                    Servername = _servername,
+                    Containers = containerData,
+                };
+
+                if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
+                {
+                    dataToSend.CommandRequestTopic = _servername + _selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
+                    dataToSend.CommandResponseTopic = _servername + _selfContainerId + "command-requests";
+                }
+                if (dataToSend.Containers.Count != 0)
+                    SendMessage(_statsTopic, dataToSend, p);
+                await Task.Delay(TimeSpan.FromSeconds(_intervalDelay));
             }
         }
 
@@ -196,7 +195,7 @@ namespace DashboardServer.Updaters
 
         private static double CalculateMemoryPercentage(ulong memoryLimit, ulong memoryUsage)
         {
-            double memoryPercentage = memoryUsage / memoryLimit;
+            double memoryPercentage = ((double)memoryUsage / (double)memoryLimit) * 100;
             return Math.Round(memoryPercentage, 2);
         }
 
