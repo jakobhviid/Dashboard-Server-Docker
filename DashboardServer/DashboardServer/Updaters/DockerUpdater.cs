@@ -17,8 +17,8 @@ namespace DashboardServer.Updaters
     {
         private static readonly DockerClient _client = new DockerClientConfiguration(new Uri("unix:///var/run/docker.sock")).CreateClient();
         private static string _bootstrapServers = Environment.GetEnvironmentVariable("KAFKA_URL") ?? "kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092";
-        private const string _overviewTopic = "0913c91b-ec2b-4b69-ad8c-d9c8d25f1464-general_info";
-        private const string _statsTopic = "0913c91b-ec2b-4b69-ad8c-d9c8d25f1464-stats_info";
+        private const string _overviewTopic = "f0e1e946-50d0-4a2b-b1a5-f21b92e09ac1-general_info";
+        private const string _statsTopic = "33a325ce-b0c0-43a7-a846-4f46acdb367e-stats_info";
         private static int _intervalDelay = Convert.ToInt32(Environment.GetEnvironmentVariable("INTERVAL")) == 0 ? 5 : Convert.ToInt32(Environment.GetEnvironmentVariable("INTERVAL"));
         private static string _servername = Environment.GetEnvironmentVariable("SERVER_NAME") ?? "PlaceholderServer";
         private static string _selfContainerId = Dns.GetHostName()[..10];
@@ -61,43 +61,48 @@ namespace DashboardServer.Updaters
             Console.WriteLine("Sending overview data every " + _intervalDelay + " seconds");
             while (true)
             {
-                var containers = await _client.Containers.ListContainersAsync(
-                    new ContainersListParameters
+                new Task(async() =>
+                {
+                    Console.WriteLine("Sending OVERVIEW DATA NOW");
+                    var containers = await _client.Containers.ListContainersAsync(
+                        new ContainersListParameters
+                        {
+                            All = true,
+                        }
+                    );
+
+                    var containerData = new List<OverviewContainerData>();
+
+                    foreach (var container in containers)
                     {
-                        All = true,
+                        // TODO: Change this to an observer pattern where data is only sent if one of the containers have changed (beside uptime)
+                        if (container.ID[..10] == _selfContainerId)continue;
+                        containerData.Add(new OverviewContainerData
+                        {
+                            Id = container.ID[..10],
+                                Name = container.Names[0],
+                                Image = container.Image,
+                                CreationTime = container.Created,
+                                State = container.State,
+                                Status = container.Status
+                        });
                     }
-                );
 
-                var containerData = new List<OverviewContainerData>();
-
-                foreach (var container in containers)
-                {
-                    // TODO: Change this to an observer pattern where data is only sent if one of the containers have changed (beside uptime)
-                    if (container.ID[..10] == _selfContainerId)continue;
-                    containerData.Add(new OverviewContainerData
+                    var dataToSend = new OverViewData
                     {
-                        Id = container.ID[..10],
-                            Name = container.Names[0],
-                            Image = container.Image,
-                            CreationTime = container.Created,
-                            State = container.State,
-                            Status = container.Status
-                    });
-                }
+                        Servername = _servername,
+                        Containers = containerData
+                    };
 
-                var dataToSend = new OverViewData
-                {
-                    Servername = _servername,
-                    Containers = containerData
-                };
+                    if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
+                    {
+                        dataToSend.CommandRequestTopic = _servername + _selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
+                        dataToSend.CommandResponseTopic = _servername + _selfContainerId + "command-requests";
+                    }
 
-                if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
-                {
-                    dataToSend.CommandRequestTopic = _servername + _selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
-                    dataToSend.CommandResponseTopic = _servername + _selfContainerId + "command-requests";
-                }
+                    SendMessage(_overviewTopic, dataToSend, p);
+                }).Start();
 
-                SendMessage(_overviewTopic, dataToSend, p);
                 await Task.Delay(TimeSpan.FromSeconds(_intervalDelay));
             }
         }
@@ -114,57 +119,62 @@ namespace DashboardServer.Updaters
             Console.WriteLine("Sending stats data every " + _intervalDelay + " seconds");
             while (true)
             {
-                var containers = await _client.Containers.ListContainersAsync(new ContainersListParameters());
-
-                var containerData = new List<StatsContainerData>();
-
-                foreach (var container in containers)
+                new Task(async() =>
                 {
-                    if (container.ID[..10] == _selfContainerId)continue;
-                    CancellationTokenSource cancellation = new CancellationTokenSource();
-                    var responseHandler = new Progress<ContainerStatsResponse>(delegate(ContainerStatsResponse ctr)
+                    Console.WriteLine("Sending STATSDATA NOW");
+                    var containers = await _client.Containers.ListContainersAsync(new ContainersListParameters());
+
+                    var containerData = new List<StatsContainerData>();
+
+                    foreach (var container in containers)
                     {
-                        if (ctr.PreCPUStats.SystemUsage == 0)return; // it should read stats twice before it's possible to read the relevant data
-                        else
+                        if (container.ID[..10] == _selfContainerId)continue;
+                        CancellationTokenSource cancellation = new CancellationTokenSource();
+                        var responseHandler = new Progress<ContainerStatsResponse>(delegate(ContainerStatsResponse ctr)
                         {
-                            var numOfCpu = ctr.CPUStats.CPUUsage.PercpuUsage.Count;
-                            var currentCpuUsage = ctr.CPUStats.CPUUsage.TotalUsage;
-                            var previousCpuUsage = ctr.PreCPUStats.CPUUsage.TotalUsage;
-                            var currentSystemCpuUsage = ctr.CPUStats.SystemUsage;
-                            var previousSystemCpuUsage = ctr.PreCPUStats.SystemUsage;
-                            containerData.Add(new StatsContainerData
+                            if (ctr.PreCPUStats.SystemUsage == 0)return; // it should read stats twice before it's possible to read the relevant data
+                            else
                             {
-                                Id = container.ID[..10],
-                                    Name = container.Names[0],
-                                    NumOfCpu = numOfCpu,
-                                    CpuUsage = currentCpuUsage,
-                                    SystemCpuUsage = currentSystemCpuUsage,
-                                    CpuPercentage = CalculateCpuPercentage(numOfCpu, currentCpuUsage, previousCpuUsage, currentSystemCpuUsage, previousSystemCpuUsage),
-                                    MemoryPercentage = CalculateMemoryPercentage(ctr.MemoryStats.Limit, ctr.MemoryStats.Usage),
-                                    DiskInputBytes = ctr.StorageStats.ReadSizeBytes, // TODO: Check if this value is correct or if you have to use the commented python code at the bottom of this file
-                                    DiskOutputBytes = ctr.StorageStats.WriteSizeBytes, // TODO: Same as above
-                                    NetInputBytes = CalculateNetInputBytes(ctr),
-                                    NetOutputBytes = CalculateNetOutputBytes(ctr),
-                            });
-                            cancellation.Cancel(); // Only read twice every interval for cpu usage calculation
-                        }
-                    });
-                    await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { Stream = false }, responseHandler, cancellation.Token);
-                }
+                                var numOfCpu = ctr.CPUStats.CPUUsage.PercpuUsage.Count;
+                                var currentCpuUsage = ctr.CPUStats.CPUUsage.TotalUsage;
+                                var previousCpuUsage = ctr.PreCPUStats.CPUUsage.TotalUsage;
+                                var currentSystemCpuUsage = ctr.CPUStats.SystemUsage;
+                                var previousSystemCpuUsage = ctr.PreCPUStats.SystemUsage;
+                                containerData.Add(new StatsContainerData
+                                {
+                                    Id = container.ID[..10],
+                                        Name = container.Names[0],
+                                        NumOfCpu = numOfCpu,
+                                        CpuUsage = currentCpuUsage,
+                                        SystemCpuUsage = currentSystemCpuUsage,
+                                        CpuPercentage = CalculateCpuPercentage(numOfCpu, currentCpuUsage, previousCpuUsage, currentSystemCpuUsage, previousSystemCpuUsage),
+                                        MemoryPercentage = CalculateMemoryPercentage(ctr.MemoryStats.Limit, ctr.MemoryStats.Usage),
+                                        DiskInputBytes = ctr.StorageStats.ReadSizeBytes, // TODO: Check if this value is correct or if you have to use the commented python code at the bottom of this file
+                                        DiskOutputBytes = ctr.StorageStats.WriteSizeBytes, // TODO: Same as above
+                                        NetInputBytes = CalculateNetInputBytes(ctr),
+                                        NetOutputBytes = CalculateNetOutputBytes(ctr),
+                                });
+                                cancellation.Cancel(); // Only read twice every interval for cpu usage calculation
+                            }
+                        });
+                        await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { Stream = false }, responseHandler, cancellation.Token);
+                    }
 
-                var dataToSend = new StatsData
-                {
-                    Servername = _servername,
-                    Containers = containerData,
-                };
+                    var dataToSend = new StatsData
+                    {
+                        Servername = _servername,
+                        Containers = containerData,
+                    };
 
-                if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
-                {
-                    dataToSend.CommandRequestTopic = _servername + _selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
-                    dataToSend.CommandResponseTopic = _servername + _selfContainerId + "command-requests";
-                }
-                if (dataToSend.Containers.Count != 0)
-                    SendMessage(_statsTopic, dataToSend, p);
+                    if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
+                    {
+                        dataToSend.CommandRequestTopic = _servername + _selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
+                        dataToSend.CommandResponseTopic = _servername + _selfContainerId + "command-requests";
+                    }
+                    if (dataToSend.Containers.Count != 0)
+                        SendMessage(_statsTopic, dataToSend, p);
+                }).Start();
+
                 await Task.Delay(TimeSpan.FromSeconds(_intervalDelay));
             }
         }
