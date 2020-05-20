@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
+using DashboardServer.Helpers;
 using DashboardServer.Updaters.UpdaterResponses;
 using Docker.DotNet;
 using Docker.DotNet.Models;
@@ -16,21 +17,18 @@ namespace DashboardServer.Updaters
     public class DockerUpdater
     {
         private static readonly DockerClient _client = new DockerClientConfiguration(new Uri("unix:///var/run/docker.sock")).CreateClient();
-        private static string _bootstrapServers = Environment.GetEnvironmentVariable("KAFKA_URL") ?? "kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092";
         private const string _overviewTopic = "f0e1e946-50d0-4a2b-b1a5-f21b92e09ac1-general_info";
         private const string _statsTopic = "33a325ce-b0c0-43a7-a846-4f46acdb367e-stats_info";
         private static int _intervalDelay = Convert.ToInt32(Environment.GetEnvironmentVariable("INTERVAL")) == 0 ? 5 : Convert.ToInt32(Environment.GetEnvironmentVariable("INTERVAL"));
-        private static string _servername = Environment.GetEnvironmentVariable("SERVER_NAME") ?? "PlaceholderServer";
-        private static string _selfContainerId = Dns.GetHostName()[..10];
         private static string[] _processesToStart = (Environment.GetEnvironmentVariable("PROCESSES_TO_START") ?? "overviewdata,statsdata,commandserver").Split(",");
-        private static JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
-        {
-            ContractResolver = new CamelCasePropertyNamesContractResolver()
-        };
 
         public static void Start()
         {
-            var producerConfig = new ProducerConfig { BootstrapServers = _bootstrapServers, Acks = Acks.Leader };
+            var producerConfig = new ProducerConfig
+            {
+                BootstrapServers = KafkaHelpers.bootstrapServers,
+                Acks = Acks.Leader
+            };
             using var p = new ProducerBuilder<Null, string>(producerConfig).Build();
 
             Task[] tester = new Task[2];
@@ -76,7 +74,7 @@ namespace DashboardServer.Updaters
                     foreach (var container in containers)
                     {
                         // TODO: Change this to an observer pattern where data is only sent if one of the containers have changed (beside uptime)
-                        if (container.ID[..10] == _selfContainerId)continue;
+                        if (container.ID[..10] == KafkaHelpers.selfContainerId)continue;
                         containerData.Add(new OverviewContainerData
                         {
                             Id = container.ID[..10],
@@ -90,17 +88,17 @@ namespace DashboardServer.Updaters
 
                     var dataToSend = new OverViewData
                     {
-                        Servername = _servername,
+                        Servername = KafkaHelpers.servername,
                         Containers = containerData
                     };
 
                     if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
                     {
-                        dataToSend.CommandRequestTopic = _servername + _selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
-                        dataToSend.CommandResponseTopic = _servername + _selfContainerId + "command-requests";
+                        dataToSend.CommandRequestTopic = KafkaHelpers.requestTopic;
+                        dataToSend.CommandResponseTopic = KafkaHelpers.responseTopic;
                     }
 
-                    SendMessage(_overviewTopic, dataToSend, p);
+                    await KafkaHelpers.SendMessageAsync(_overviewTopic, dataToSend, p);
                 }).Start();
 
                 await Task.Delay(TimeSpan.FromSeconds(_intervalDelay));
@@ -128,7 +126,7 @@ namespace DashboardServer.Updaters
 
                     foreach (var container in containers)
                     {
-                        if (container.ID[..10] == _selfContainerId)continue;
+                        if (container.ID[..10] == KafkaHelpers.selfContainerId)continue;
                         CancellationTokenSource cancellation = new CancellationTokenSource();
                         var responseHandler = new Progress<ContainerStatsResponse>(delegate(ContainerStatsResponse ctr)
                         {
@@ -162,35 +160,20 @@ namespace DashboardServer.Updaters
 
                     var dataToSend = new StatsData
                     {
-                        Servername = _servername,
+                        Servername = KafkaHelpers.servername,
                         Containers = containerData,
                     };
 
                     if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
                     {
-                        dataToSend.CommandRequestTopic = _servername + _selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
-                        dataToSend.CommandResponseTopic = _servername + _selfContainerId + "command-requests";
+                        dataToSend.CommandRequestTopic = KafkaHelpers.servername + KafkaHelpers.selfContainerId + "command-requests"; // servername plus this specific container id + command-requests
+                        dataToSend.CommandResponseTopic = KafkaHelpers.servername + KafkaHelpers.selfContainerId + "command-requests";
                     }
                     if (dataToSend.Containers.Count != 0)
-                        SendMessage(_statsTopic, dataToSend, p);
+                        await KafkaHelpers.SendMessageAsync(_statsTopic, dataToSend, p);
                 }).Start();
 
                 await Task.Delay(TimeSpan.FromSeconds(_intervalDelay));
-            }
-        }
-
-        private static async void SendMessage(string topic, object messageToSerialize, IProducer<Null, string> p)
-        {
-            try
-            {
-                var deliveryReport = await p.ProduceAsync(
-                    topic, new Message<Null, string> { Value = JsonConvert.SerializeObject(messageToSerialize, _jsonSettings) });
-
-                Console.WriteLine($"delivered to: {deliveryReport.TopicPartitionOffset}");
-            }
-            catch (ProduceException<string, string> e)
-            {
-                Console.WriteLine($"Failed to deliver message: {e.Message} [{e.Error.Code}]");
             }
         }
 

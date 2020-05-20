@@ -1,46 +1,60 @@
 ﻿using System;
+using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Confluent.Kafka;
 using DashboardServer.CommandServer.ContainerRequests;
 using DashboardServer.CommandServer.ContainerResponses;
+using DashboardServer.CommandServer.Contracts;
+using DashboardServer.Helpers;
 using Newtonsoft.Json;
 
-namespace DashboardServer.CommandServer {
-    public class CommandServer {
-        private const string bootstrapServers = "kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092"; // TODO: servers is to be replaced by the environment variable KAFKA_URLS
-        private static readonly string responseTopic = "container1-commands-responses"; // TODO: 'container1' is to be replaced by the server host name environment variable
-        private static readonly string requestTopic = "container1-commands-requests"; // TODO: 'container1' is to be replaced by the server host name environment variable
-
-        public static void Start (CancellationTokenSource cts) {
-            var consumerConfig = new ConsumerConfig {
-                GroupId = "command-server-group",
-                BootstrapServers = bootstrapServers,
+namespace DashboardServer.CommandServer
+{
+    public class CommandServer
+    {
+        public static async void Start(CancellationTokenSource cts)
+        {
+            var consumerConfig = new ConsumerConfig
+            {
+                GroupId = "command-server",
+                BootstrapServers = KafkaHelpers.bootstrapServers,
                 AutoOffsetReset = AutoOffsetReset.Earliest,
             };
 
-            using (var c = new ConsumerBuilder<Ignore, string> (consumerConfig).Build ()) {
+            using(var c = new ConsumerBuilder<Ignore, string>(consumerConfig).Build())
+            {
 
-                c.Subscribe (requestTopic);
+                c.Subscribe(KafkaHelpers.requestTopic);
 
-                Console.WriteLine ($"Listening for commands on topic {requestTopic}");
-
-                try {
-                    var producerConfig = new ProducerConfig { BootstrapServers = bootstrapServers };
-                    using (var p = new ProducerBuilder<Null, string> (producerConfig).Build ()) {
-                        while (true) {
-                            try {
-                                var consumeResult = c.Consume (cts.Token); // Polling for new messages, waiting here until message recieved
+                Console.WriteLine($"Listening for commands on topic {KafkaHelpers.requestTopic}");
+                try
+                {
+                    var producerConfig = new ProducerConfig { BootstrapServers = KafkaHelpers.bootstrapServers, Acks = Acks.Leader };
+                    using(var p = new ProducerBuilder<Null, string>(producerConfig).Build())
+                    {
+                        while (true)
+                        {
+                            try
+                            {
+                                var consumeResult = c.Consume(cts.Token); // Polling for new messages, waiting here until message recieved
 
                                 var messageJsonString = consumeResult.Message.Value;
 
-                                ContainerRequest request = JsonConvert.DeserializeObject<ContainerRequest> (messageJsonString);
-                                CallAction (request.Action, messageJsonString, p); // Call the method
+                                ContainerRequest request = JsonConvert.DeserializeObject<ContainerRequest>(messageJsonString);
+                                await CallAction(request.Action, messageJsonString, p);
 
-                            } catch (ConsumeException ex) {
-                                Console.Error.WriteLine (ex.Error);
-                            } catch (Newtonsoft.Json.JsonException ex) {
-                                p.Produce (responseTopic, new Message<Null, string> {
-                                    Value = JsonConvert.SerializeObject (new ContainerResponse {
+                            }
+                            catch (ConsumeException ex)
+                            {
+                                Console.Error.WriteLine(ex.Error);
+                            }
+                            catch (Newtonsoft.Json.JsonException ex)
+                            {
+                                p.Produce(KafkaHelpers.responseTopic, new Message<Null, string>
+                                {
+                                    Value = JsonConvert.SerializeObject(new ContainerResponse
+                                    {
                                         ResponseStatusCode = 400,
                                             Message = ex.Message
                                     })
@@ -48,26 +62,52 @@ namespace DashboardServer.CommandServer {
                             }
                         }
                     }
-                } catch (OperationCanceledException) { } finally {
+                }
+                catch (OperationCanceledException) { }
+                finally
+                {
                     // Ensure the consumer leaves the group cleanly and final offsets are committed.
-                    c.Close ();
+                    c.Close();
                 }
 
             }
         }
 
-        private static void CallAction (ContainerActionType action, string jsonParameterString, IProducer<Null, String> p) {
-            switch (action) {
+        private async static Task CallAction(ContainerActionType action, string jsonParameterString, IProducer<Null, String> p)
+        {
+            switch (action)
+            {
                 case ContainerActionType.RUN_NEW:
-                    var runNewParam = JsonConvert.DeserializeObject<RunNewContainerParameters> (jsonParameterString);
-                    ContainerAction.RunNewContainer (runNewParam, p);
+                    var runNewParam = JsonConvert.DeserializeObject<RunNewContainerParameters>(jsonParameterString);
+                    await ContainerAction.RunNewContainer(runNewParam, p);
+                    break;
+                case ContainerActionType.START:
+                    var startParam = JsonConvert.DeserializeObject<StartContainerParameters>(jsonParameterString);
+                    await ContainerAction.StartContainer(startParam, p);
+                    break;
+                case ContainerActionType.STOP:
+                    var stopParam = JsonConvert.DeserializeObject<StopContainerParameters>(jsonParameterString);
+                    await ContainerAction.StopContainer(stopParam, p);
+                    break;
+                case ContainerActionType.REMOVE:
+                    var removeParam = JsonConvert.DeserializeObject<RemoveContainerParameters>(jsonParameterString);
+                    await ContainerAction.RemoveContainer(removeParam, p);
+                    break;
+                case ContainerActionType.RESTART:
+                    var restartParam = JsonConvert.DeserializeObject<RestartContainerParameters>(jsonParameterString);
+                    await ContainerAction.RestartContainer(restartParam, p);
                     break;
                 case ContainerActionType.RENAME:
-                    var parameters = JsonConvert.DeserializeObject<RenameContainerParameter> (jsonParameterString);
-                    ContainerAction.RenameContainer (parameters, p);
+                    var parameters = JsonConvert.DeserializeObject<RenameContainerParameter>(jsonParameterString);
+                    await ContainerAction.RenameContainer(parameters, p);
+                    break;
+                case ContainerActionType.UPDATE_CONFIGURATION:
+                    var updateParam = JsonConvert.DeserializeObject<UpdateConfigContainerParameters>(jsonParameterString);
+                    await ContainerAction.UpdateConfigContainer(updateParam, p);
                     break;
                 default:
-                    throw new ArgumentException ("Action not supported");
+                    await KafkaHelpers.SendMessageAsync(KafkaHelpers.responseTopic, new ContainerResponse {ResponseStatusCode = 404, Message = ResponseMessageContracts.METHOD_CALL_NOT_VIABLE}, p);
+                    break;
             }
         }
     }

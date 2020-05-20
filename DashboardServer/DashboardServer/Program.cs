@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 namespace DashboardServer
@@ -17,7 +18,7 @@ namespace DashboardServer
                 cts.Cancel();
                 System.Environment.Exit(0);
             };
-            var processesToStart = (Environment.GetEnvironmentVariable("PROCESSES_TO_START") ?? "overviewdata,statsdata").Split(",");
+            var processesToStart = (Environment.GetEnvironmentVariable("PROCESSES_TO_START") ?? "overviewdata,statsdata,commandserver").Split(",");
 
             IList<Task> tasks = new List<Task>();
 
