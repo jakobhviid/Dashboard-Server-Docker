@@ -5,5 +5,3 @@ node_modules
 python_env
 .vscode
 __pycache__
-
-DashboardServer/.vs

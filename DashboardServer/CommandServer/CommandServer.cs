@@ -18,19 +18,19 @@ namespace DashboardServer.CommandServer
             var consumerConfig = new ConsumerConfig
             {
                 GroupId = "command-server",
-                BootstrapServers = KafkaHelpers.bootstrapServers,
+                BootstrapServers = KafkaHelpers.BootstrapServers,
                 AutoOffsetReset = AutoOffsetReset.Earliest,
             };
 
             using(var c = new ConsumerBuilder<Ignore, string>(consumerConfig).Build())
             {
 
-                c.Subscribe(KafkaHelpers.requestTopic);
+                c.Subscribe(KafkaHelpers.RequestTopic);
 
-                Console.WriteLine($"Listening for commands on topic {KafkaHelpers.requestTopic}");
+                Console.WriteLine($"Listening for commands on topic {KafkaHelpers.RequestTopic}");
                 try
                 {
-                    var producerConfig = new ProducerConfig { BootstrapServers = KafkaHelpers.bootstrapServers, Acks = Acks.Leader };
+                    var producerConfig = new ProducerConfig { BootstrapServers = KafkaHelpers.BootstrapServers, Acks = Acks.Leader };
                     using(var p = new ProducerBuilder<Null, string>(producerConfig).Build())
                     {
                         while (true)
@@ -51,7 +51,7 @@ namespace DashboardServer.CommandServer
                             }
                             catch (Newtonsoft.Json.JsonException ex)
                             {
-                                p.Produce(KafkaHelpers.responseTopic, new Message<Null, string>
+                                p.Produce(KafkaHelpers.ResponseTopic, new Message<Null, string>
                                 {
                                     Value = JsonConvert.SerializeObject(new ContainerResponse
                                     {
@@ -106,7 +106,7 @@ namespace DashboardServer.CommandServer
                     await ContainerAction.UpdateConfigContainer(updateParam, p);
                     break;
                 default:
-                    await KafkaHelpers.SendMessageAsync(KafkaHelpers.responseTopic, new ContainerResponse {ResponseStatusCode = 404, Message = ResponseMessageContracts.METHOD_CALL_NOT_VIABLE}, p);
+                    await KafkaHelpers.SendMessageAsync(KafkaHelpers.ResponseTopic, new ContainerResponse {ResponseStatusCode = 404, Message = ResponseMessageContracts.METHOD_CALL_NOT_VIABLE}, p);
                     break;
             }
         }

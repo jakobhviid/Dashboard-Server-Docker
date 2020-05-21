@@ -13,4 +13,5 @@ services:
       ADVERTISED_COMMAND_URL: http://127.0.0.1:5000
       SERVER_NAME: OliversMBP
       KAFKA_URL: kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092
-      INTERVAL: 5
+      CHECK_INTERVAL_SECONDS: 5
+      SEND_INTERVAL_MINUTES: 5

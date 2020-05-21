@@ -9,11 +9,11 @@ namespace DashboardServer.Helpers
 {
     public class KafkaHelpers
     {
-        public static string bootstrapServers = Environment.GetEnvironmentVariable("KAFKA_URL") ?? "kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092";
-        public static string servername = Environment.GetEnvironmentVariable("SERVER_NAME") ?? "PlaceholderServer";
-        public static string selfContainerId = Dns.GetHostName()[..10];
-        public static readonly string requestTopic = servername + "-" + selfContainerId + "-command-requests"; // servername plus this specific container id + command-requests
-        public static readonly string responseTopic = servername + "-" + selfContainerId + "-command-requests";
+        public static string BootstrapServers = Environment.GetEnvironmentVariable("KAFKA_URL") ?? "kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092";
+        public static string Servername = Environment.GetEnvironmentVariable("SERVER_NAME") ?? "PlaceholderServer";
+        public static string SelfContainerId = Dns.GetHostName()[..10];
+        public static readonly string RequestTopic = Servername + "-" + SelfContainerId + "-command-requests"; // servername plus this specific container id + command-requests
+        public static readonly string ResponseTopic = Servername + "-" + SelfContainerId + "-command-requests";
 
         private static JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
         {

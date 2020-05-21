@@ -1,7 +1,7 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DashboardServer", "DashboardServer\DashboardServer.csproj", "{FA44421D-0E51-4D77-9CC3-E153A77389C5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DashboardServer", "DashboardServer.csproj", "{FA44421D-0E51-4D77-9CC3-E153A77389C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
