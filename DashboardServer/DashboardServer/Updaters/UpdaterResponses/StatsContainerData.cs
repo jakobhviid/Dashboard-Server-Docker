@@ -6,7 +6,6 @@ namespace DashboardServer.Updaters.UpdaterResponses
     public struct StatsContainerData
     {
         [JsonProperty(Required = Required.Always)]
-
         public string Id { get; set; }
 
         [JsonProperty(Required = Required.Always)]

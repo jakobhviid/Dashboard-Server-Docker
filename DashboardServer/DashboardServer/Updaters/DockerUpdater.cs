@@ -75,7 +75,7 @@ namespace DashboardServer.Updaters
                         containerData.Add(new OverviewContainerData
                         {
                             Id = container.ID[..10],
-                                Name = container.Names[0],
+                                Name = container.Names[0][1..],
                                 Image = container.Image,
                                 CreationTime = container.Created,
                                 State = container.State,
@@ -125,7 +125,6 @@ namespace DashboardServer.Updaters
                     foreach (var container in containers)
                     {
                         if (container.ID[..10] == KafkaHelpers.selfContainerId)continue;
-                        CancellationTokenSource cancellation = new CancellationTokenSource();
                         var responseHandler = new Progress<ContainerStatsResponse>(delegate(ContainerStatsResponse ctr)
                         {
                             if (ctr.PreCPUStats.SystemUsage == 0)return; // it should read stats twice before it's possible to read the relevant data
@@ -139,7 +138,7 @@ namespace DashboardServer.Updaters
                                 containerData.Add(new StatsContainerData
                                 {
                                     Id = container.ID[..10],
-                                        Name = container.Names[0],
+                                        Name = container.Names[0][1..],
                                         NumOfCpu = numOfCpu,
                                         CpuUsage = currentCpuUsage,
                                         SystemCpuUsage = currentSystemCpuUsage,
@@ -151,10 +150,9 @@ namespace DashboardServer.Updaters
                                         NetOutputBytes = CalculateNetOutputBytes(ctr),
                                         UpdateTime = new DateTime(),
                                 });
-                                cancellation.Cancel(); // Only read twice every interval for cpu usage calculation
                             }
                         });
-                        await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { Stream = false }, responseHandler, cancellation.Token);
+                        await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { Stream = false }, responseHandler);
                     }
 
                     var dataToSend = new StatsData
