@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
@@ -9,8 +8,6 @@ using DashboardServer.Helpers;
 using DashboardServer.Updaters.UpdaterResponses;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace DashboardServer.Updaters
 {
@@ -82,7 +79,8 @@ namespace DashboardServer.Updaters
                                 Image = container.Image,
                                 CreationTime = container.Created,
                                 State = container.State,
-                                Status = container.Status
+                                Status = container.Status,
+                                UpdateTime = new DateTime(),
                         });
                     }
 
@@ -151,6 +149,7 @@ namespace DashboardServer.Updaters
                                         DiskOutputBytes = ctr.StorageStats.WriteSizeBytes, // TODO: Same as above
                                         NetInputBytes = CalculateNetInputBytes(ctr),
                                         NetOutputBytes = CalculateNetOutputBytes(ctr),
+                                        UpdateTime = new DateTime(),
                                 });
                                 cancellation.Cancel(); // Only read twice every interval for cpu usage calculation
                             }

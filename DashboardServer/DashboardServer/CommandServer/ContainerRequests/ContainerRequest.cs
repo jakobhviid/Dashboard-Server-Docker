@@ -1,7 +1,9 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace DashboardServer.CommandServer.ContainerRequests
 {
+    [JsonConverter(typeof(StringEnumConverter))]  
     public enum ContainerActionType // TODO: string representation
     {
         RUN_NEW,
