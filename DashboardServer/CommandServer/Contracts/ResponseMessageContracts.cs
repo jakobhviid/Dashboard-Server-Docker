@@ -10,5 +10,7 @@ namespace DashboardServer.CommandServer.Contracts
         public const string CONTAINER_RENAMED = "Container successfully renamed";
         public const string CONTAINER_CONFIGURATION_UPDATED = "Container's ressource configuration succesfully updated";
         public const string METHOD_CALL_NOT_VIABLE = "Method call not viable. Contact maintainer for possilble implementation";
+        public const string OVERVIEW_DATA_REFETCHED = "Overview data manually refetched";
+        public const string STATS_DATA_REFETCHED = "Stats data manually refetched";
     }
 }

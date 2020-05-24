@@ -12,7 +12,9 @@ namespace DashboardServer.CommandServer.ContainerRequests
         REMOVE,
         RESTART,
         RENAME,
-        UPDATE_CONFIGURATION
+        UPDATE_CONFIGURATION,
+        REFETCH_OVERVIEW,
+        REFETCH_STATS
     }
     public struct ContainerRequest
     {

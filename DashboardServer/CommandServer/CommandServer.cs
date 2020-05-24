@@ -102,6 +102,12 @@ namespace DashboardServer.CommandServer
                     var updateParam = JsonConvert.DeserializeObject<UpdateConfigContainerParameters>(jsonParameterString);
                     await ContainerAction.UpdateConfigContainer(updateParam, p);
                     break;
+                case ContainerActionType.REFETCH_OVERVIEW:
+                    await ContainerAction.RefetchOverviewData(p);
+                    break;
+                case ContainerActionType.REFETCH_STATS:
+                    await ContainerAction.RefetchStatsData(p);
+                    break;
                 default:
                     await KafkaHelpers.SendMessageAsync(KafkaHelpers.ResponseTopic, new ContainerResponse { ResponseStatusCode = 404, Message = ResponseMessageContracts.METHOD_CALL_NOT_VIABLE }, p);
                     break;

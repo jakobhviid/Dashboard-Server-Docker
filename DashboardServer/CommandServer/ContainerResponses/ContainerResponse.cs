@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace DashboardServer.CommandServer.ContainerResponses
@@ -11,6 +12,6 @@ namespace DashboardServer.CommandServer.ContainerResponses
         public string Message { get; set; }
 
         [JsonProperty(Required = Required.AllowNull)]
-        public string ContainerId { get; set; }
+        public string[] ContainerIds { get; set; }
     }
 }

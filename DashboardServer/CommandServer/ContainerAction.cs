@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
@@ -45,7 +46,7 @@ namespace DashboardServer.CommandServer
                 {
                     ResponseStatusCode = 201,
                         Message = ResponseMessageContracts.CONTAINER_CREATED,
-                        ContainerId = dockerResponse.ID
+                        ContainerIds = new string[] { dockerResponse.ID }
                 }, p);
 
             }
@@ -55,7 +56,7 @@ namespace DashboardServer.CommandServer
                 {
                     ResponseStatusCode = 400,
                         Message = ex.Message,
-                        ContainerId = null
+                        ContainerIds = null
                 }, p); // TODO: create contract for these error messages
             }
         }
@@ -77,7 +78,7 @@ namespace DashboardServer.CommandServer
                 {
                     ResponseStatusCode = 200,
                         Message = ResponseMessageContracts.CONTAINER_STARTED,
-                        ContainerId = parameters.ContainerId
+                        ContainerIds = new string[] { parameters.ContainerId }
                 }, p);
             }
             catch (DockerApiException ex)
@@ -86,7 +87,7 @@ namespace DashboardServer.CommandServer
                 {
                     ResponseStatusCode = 400,
                         Message = ex.Message,
-                        ContainerId = parameters.ContainerId
+                        ContainerIds = new string[] { parameters.ContainerId }
                 }, p);
             }
         }
@@ -104,11 +105,22 @@ namespace DashboardServer.CommandServer
                 await KafkaHelpers.SendMessageAsync(DockerUpdater.OverviewTopic, overviewContainerUpdate, p);
 
                 // Send response
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 200, Message = ResponseMessageContracts.CONTAINER_STOPPED, ContainerId = parameters.ContainerId }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 200,
+                        Message = ResponseMessageContracts.CONTAINER_STOPPED,
+                        ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
             }
             catch (DockerApiException ex)
             {
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 400, Message = ex.Message, ContainerId = parameters.ContainerId }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 400,
+                        Message = ex.Message,
+                        ContainerIds = new string[] { parameters.ContainerId }
+
+                }, p);
             }
         }
 
@@ -125,11 +137,22 @@ namespace DashboardServer.CommandServer
                 await KafkaHelpers.SendMessageAsync(DockerUpdater.OverviewTopic, overviewContainerUpdate, p);
 
                 // Send response
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 200, Message = ResponseMessageContracts.CONTAINER_REMOVED, ContainerId = parameters.ContainerId }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 200,
+                        Message = ResponseMessageContracts.CONTAINER_REMOVED,
+                        ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
             }
             catch (DockerApiException ex)
             {
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 400, Message = ex.Message, ContainerId = parameters.ContainerId }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 400,
+                        Message = ex.Message,
+                        ContainerIds = new string[] { parameters.ContainerId }
+
+                }, p);
             }
         }
 
@@ -146,11 +169,21 @@ namespace DashboardServer.CommandServer
                 await KafkaHelpers.SendMessageAsync(DockerUpdater.OverviewTopic, overviewContainerUpdate, p);
 
                 // Send response
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 200, Message = ResponseMessageContracts.CONTAINER_RESTARTED, ContainerId = parameters.ContainerId }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 200,
+                        Message = ResponseMessageContracts.CONTAINER_RESTARTED,
+                        ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
             }
             catch (DockerApiException ex)
             {
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 400, Message = ex.Message, ContainerId = parameters.ContainerId }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 400,
+                        Message = ex.Message,
+                        ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
             }
         }
 
@@ -170,11 +203,21 @@ namespace DashboardServer.CommandServer
                 await KafkaHelpers.SendMessageAsync(DockerUpdater.OverviewTopic, overviewContainerUpdate, p);
 
                 // Send response
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 200, Message = ResponseMessageContracts.CONTAINER_RENAMED, ContainerId = parameters.ContainerId }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 200,
+                        Message = ResponseMessageContracts.CONTAINER_RENAMED,
+                        ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
             }
             catch (DockerApiException ex)
             {
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 400, Message = ex.Message, ContainerId = parameters.ContainerId }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 400,
+                        Message = ex.Message,
+                        ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
             }
         }
 
@@ -201,15 +244,54 @@ namespace DashboardServer.CommandServer
                 // Updating the containers with the new configurations right away and sending it out
                 var updatedContainers = await DockerUpdater.FetchStatsData();
                 var overviewContainerUpdate = DockerUpdater.CreateStatsData(updatedContainers);
-                await KafkaHelpers.SendMessageAsync(DockerUpdater.OverviewTopic, overviewContainerUpdate, p);
+                await KafkaHelpers.SendMessageAsync(DockerUpdater.StatsTopic, overviewContainerUpdate, p);
 
                 // Send response
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 200, Message = ResponseMessageContracts.CONTAINER_CONFIGURATION_UPDATED, ContainerId = parameters.ContainerId }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 200,
+                        Message = ResponseMessageContracts.CONTAINER_CONFIGURATION_UPDATED,
+                        ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
             }
             catch (DockerApiException ex)
             {
-                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse { ResponseStatusCode = 400, Message = ex.Message }, p);
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+                {
+                    ResponseStatusCode = 400,
+                        Message = ex.Message,
+                        ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
             }
+        }
+
+        public async static Task RefetchOverviewData(IProducer<Null, string> p)
+        {
+            var updatedContainers = await DockerUpdater.FetchOverviewData();
+            var overviewContainerUpdate = DockerUpdater.CreateOverViewData(updatedContainers);
+            await KafkaHelpers.SendMessageAsync(DockerUpdater.OverviewTopic, overviewContainerUpdate, p);
+            // Send response
+            await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+            {
+                ResponseStatusCode = 200,
+                    Message = ResponseMessageContracts.OVERVIEW_DATA_REFETCHED,
+                    ContainerIds = updatedContainers.Select(container => container.Id).ToArray()
+            }, p);
+        }
+
+        public async static Task RefetchStatsData(IProducer<Null, string> p)
+        {
+            // Updating the containers with the new configurations right away and sending it out
+            var updatedContainers = await DockerUpdater.FetchStatsData();
+            var overviewContainerUpdate = DockerUpdater.CreateStatsData(updatedContainers);
+            await KafkaHelpers.SendMessageAsync(DockerUpdater.StatsTopic, overviewContainerUpdate, p);
+            // Send response
+            await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse
+            {
+                ResponseStatusCode = 200,
+                    Message = ResponseMessageContracts.STATS_DATA_REFETCHED,
+                    ContainerIds = updatedContainers.Select(container => container.Id).ToArray()
+            }, p);
         }
     }
 }
