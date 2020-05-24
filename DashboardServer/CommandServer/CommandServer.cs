@@ -51,14 +51,11 @@ namespace DashboardServer.CommandServer
                             }
                             catch (Newtonsoft.Json.JsonException ex)
                             {
-                                p.Produce(KafkaHelpers.ResponseTopic, new Message<Null, string>
+                                await KafkaHelpers.SendMessageAsync(KafkaHelpers.ResponseTopic, new ContainerResponse
                                 {
-                                    Value = JsonConvert.SerializeObject(new ContainerResponse
-                                    {
-                                        ResponseStatusCode = 400,
-                                            Message = ex.Message
-                                    })
-                                });
+                                    ResponseStatusCode = 400,
+                                        Message = ex.Message
+                                }, p);
                             }
                         }
                     }
@@ -106,7 +103,7 @@ namespace DashboardServer.CommandServer
                     await ContainerAction.UpdateConfigContainer(updateParam, p);
                     break;
                 default:
-                    await KafkaHelpers.SendMessageAsync(KafkaHelpers.ResponseTopic, new ContainerResponse {ResponseStatusCode = 404, Message = ResponseMessageContracts.METHOD_CALL_NOT_VIABLE}, p);
+                    await KafkaHelpers.SendMessageAsync(KafkaHelpers.ResponseTopic, new ContainerResponse { ResponseStatusCode = 404, Message = ResponseMessageContracts.METHOD_CALL_NOT_VIABLE }, p);
                     break;
             }
         }

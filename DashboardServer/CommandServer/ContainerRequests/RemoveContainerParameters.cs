@@ -5,7 +5,7 @@ namespace DashboardServer.CommandServer.ContainerRequests
     public class RemoveContainerParameters
     {
         [JsonProperty(Required = Required.Always)]
-        public ContainerActionType Action { get; set; }
+        public const ContainerActionType Action = ContainerActionType.REMOVE;
 
         [JsonProperty(Required = Required.Always)]
         public string ContainerId { get; set; }

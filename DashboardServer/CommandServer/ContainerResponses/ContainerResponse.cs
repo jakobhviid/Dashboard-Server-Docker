@@ -9,5 +9,8 @@ namespace DashboardServer.CommandServer.ContainerResponses
 
         [JsonProperty(Required = Required.Always)]
         public string Message { get; set; }
+
+        [JsonProperty(Required = Required.AllowNull)]
+        public string ContainerId { get; set; }
     }
 }

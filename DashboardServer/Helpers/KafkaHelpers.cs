@@ -12,8 +12,8 @@ namespace DashboardServer.Helpers
         public static string BootstrapServers = Environment.GetEnvironmentVariable("KAFKA_URL") ?? "kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092";
         public static string Servername = Environment.GetEnvironmentVariable("SERVER_NAME") ?? "PlaceholderServer";
         public static string SelfContainerId = Dns.GetHostName()[..10];
-        public static readonly string RequestTopic = Servername + "-" + SelfContainerId + "-command-requests"; // servername plus this specific container id + command-requests
-        public static readonly string ResponseTopic = Servername + "-" + SelfContainerId + "-command-requests";
+        public static readonly string RequestTopic = $"command-requests-{Servername}-{SelfContainerId}";
+        public static readonly string ResponseTopic = $"command-responses-{Servername}-{SelfContainerId}";
 
         private static JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
         {
@@ -32,6 +32,14 @@ namespace DashboardServer.Helpers
             catch (ProduceException<string, string> e)
             {
                 Console.WriteLine($"Failed to deliver message: {e.Message} [{e.Error.Code}]");
+            }
+            catch (InvalidOperationException e)
+            {
+                Console.WriteLine($"Error {e.Message}");
+            }
+            catch (JsonSerializationException e)
+            {
+                Console.WriteLine($"Error serializing {e.Message}");
             }
         }
     }

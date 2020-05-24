@@ -115,7 +115,7 @@ namespace DashboardServer.Updaters
                         CreationTime = container.Created,
                         State = container.State,
                         Status = container.Status,
-                        UpdateTime = new DateTime(),
+                        UpdateTime = DateTime.Now,
                 });
             }
 
@@ -203,7 +203,7 @@ namespace DashboardServer.Updaters
                                 DiskOutputBytes = ctr.StorageStats.WriteSizeBytes, // TODO: Same as above
                                 NetInputBytes = CalculateNetInputBytes(ctr),
                                 NetOutputBytes = CalculateNetOutputBytes(ctr),
-                                UpdateTime = new DateTime(),
+                                UpdateTime = DateTime.Now,
                         });
                     }
                 });
