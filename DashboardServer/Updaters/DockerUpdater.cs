@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using DashboardServer.Helpers;
@@ -17,7 +16,7 @@ namespace DashboardServer.Updaters
         public const string OverviewTopic = "f0e1e946-50d0-4a2b-b1a5-f21b92e09ac1-general_info";
         public const string StatsTopic = "33a325ce-b0c0-43a7-a846-4f46acdb367e-stats_info";
         private static int _checkInterval = Convert.ToInt32(Environment.GetEnvironmentVariable("CHECK_INTERVAL_SECONDS")) == 0 ? 5 : Convert.ToInt32(Environment.GetEnvironmentVariable("CHECK_INTERVAL_SECONDS"));
-        private static int _sendInterval = Convert.ToInt32(Environment.GetEnvironmentVariable("SEND_INTERVAL_MINUTES")) == 0 ? 1 : Convert.ToInt32(Environment.GetEnvironmentVariable("SEND_INTERVAL_MINUTES"));
+        private static int _sendInterval = Convert.ToInt32(Environment.GetEnvironmentVariable("SEND_INTERVAL_MINUTES")) == 0 ? 15 : Convert.ToInt32(Environment.GetEnvironmentVariable("SEND_INTERVAL_MINUTES"));
         private static string[] _processesToStart = (Environment.GetEnvironmentVariable("PROCESSES_TO_START") ?? "overviewdata,statsdata,commandserver").Split(",");
 
         public static void Start()
@@ -32,7 +31,7 @@ namespace DashboardServer.Updaters
             Task[] tester = new Task[2];
             if (_processesToStart.Contains("overviewdata"))
             {
-                var overviewTask = SendOverViewDataService(p);
+                var overviewTask = SendOverViewData(p);
                 tester[0] = overviewTask;
             }
             if (_processesToStart.Contains("statsdata"))
@@ -52,7 +51,7 @@ namespace DashboardServer.Updaters
             public string CommandResponseTopic { get; set; }
         }
 
-        private static async Task SendOverViewDataService(IProducer<Null, string> p)
+        private static async Task SendOverViewData(IProducer<Null, string> p)
         {
             var latestRead = CreateOverViewData();
             DateTime latestSendTime = DateTime.Now;
@@ -105,8 +104,6 @@ namespace DashboardServer.Updaters
 
             foreach (var container in containers)
             {
-                if (container.ID[..10] == KafkaHelpers.SelfContainerId)continue;
-
                 containerData.Add(new OverviewContainerData
                 {
                     Id = container.ID[..10],
@@ -179,7 +176,6 @@ namespace DashboardServer.Updaters
 
             foreach (var container in containers)
             {
-                if (container.ID[..10] == KafkaHelpers.SelfContainerId)continue;
                 var responseHandler = new Progress<ContainerStatsResponse>(delegate(ContainerStatsResponse ctr)
                 {
                     if (ctr.PreCPUStats.SystemUsage == 0)return; // it should read stats twice before it's possible to read the relevant data
