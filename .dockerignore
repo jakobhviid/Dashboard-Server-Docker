@@ -1,7 +1,7 @@
 __pycache__
 .idea
-DashboardServer/DashboardServer/.vs
-DashboardServer/DashboardServer/bin
-DashboardServer/DashboardServer/obj
-DashboardServer/DashboardServer/.gitignore
+DashboardServer/.vs
+DashboardServer/bin
+DashboardServer/obj
+DashboardServer/.gitignore
 .vscode

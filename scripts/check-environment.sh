@@ -22,8 +22,3 @@ if [[ (-z "$CHECK_INTERVAL_SECONDS") ]]; then
     echo -e "\e[1;32mERROR - 'CHECK_INTERVAL_SECONDS' must be set! \e[0m"
     exit 1
 fi
-
-if [[ (-z "$SEND_INTERVAL_MINUTES") ]]; then
-    echo -e "\e[1;32mERROR - 'SEND_INTERVAL_MINUTES' must be set! \e[0m"
-    exit 1
-fi
