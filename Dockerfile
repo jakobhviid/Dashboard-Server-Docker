@@ -20,11 +20,11 @@ LABEL Maintainer="Oliver Marco van Komen"
 ENV PROGRAM_HOME=/opt/DashboardServer
 ENV ASPNETCORE_ENVIRONMENT=Production
 
-RUN apt update && \
-    apt install -y wget && wget https://packages.microsoft.com/config/ubuntu/19.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+RUN apt-get update && \
+    apt-get install -y wget && wget https://packages.microsoft.com/config/ubuntu/19.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
     dpkg --purge packages-microsoft-prod && dpkg -i packages-microsoft-prod.deb && \
-    apt update && \
-    apt install aspnetcore-runtime-3.1 -y
+    apt-get update && \
+    apt-get install aspnetcore-runtime-3.1 -y
 
 COPY --from=build /build/out ${PROGRAM_HOME}
 

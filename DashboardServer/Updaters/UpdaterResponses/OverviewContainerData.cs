@@ -20,6 +20,9 @@ namespace DashboardServer.Updaters.UpdaterResponses
         [JsonProperty(Required = Required.Always)]
         public string Status { get; set; }
 
+        [JsonProperty(Required = Required.AllowNull)]
+        public string Health { get; set; }
+
         [JsonProperty(Required = Required.Always)]
         public DateTime CreationTime { get; set; }
 

@@ -30,6 +30,8 @@ namespace DashboardServer.Helpers
                 if (!lastRead.Image.Equals(currentRead.Image))return true;
                 if (!lastRead.Name.Equals(currentRead.Name))return true;
                 if (!lastRead.State.Equals(currentRead.State))return true;
+                var currentHealthData = ExtractHealthDataFromStatus(currentRead.Status);
+                if (lastRead.Health != null && !lastRead.Health.Equals(currentHealthData)) return true;
                 if (!lastRead.CreationTime.Equals(currentRead.CreationTime))return true;
 
             }
@@ -44,6 +46,14 @@ namespace DashboardServer.Helpers
         private readonly static int _diskInputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_INPUT_TOLERANCE_BYTES")) == 0 ? 100 : Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_INPUT_TOLERANCE_BYTES"));
         private readonly static int _diskOutputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_OUTPUT_TOLERANCE_BYTES")) == 0 ? 100 : Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_INPUT_TOLERANCE_BYTES"));
 
+        public static string ExtractHealthDataFromStatus(string containerStatus)
+        {
+            // The container does not have health data
+            if (!containerStatus.ToLower().Contains("health"))return null;
+            var indexOfHealthSubString = containerStatus.IndexOf("health");
+            var indexOfLastParentheses = containerStatus.LastIndexOf(")");
+            return containerStatus[indexOfHealthSubString..indexOfLastParentheses];
+        }
         public static bool StatsContainersAreDifferent(IList<StatsContainerData> lastContainerReads, IList<StatsContainerData> currentContainerReads)
         {
             if (lastContainerReads == null || lastContainerReads.Count == 0 || currentContainerReads == null || currentContainerReads.Count == 0)return true;

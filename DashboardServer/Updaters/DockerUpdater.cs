@@ -54,10 +54,12 @@ namespace DashboardServer.Updaters
         private static async Task SendOverViewData(IProducer<Null, string> p)
         {
             var latestRead = CreateOverViewData();
-            DateTime latestSendTime = DateTime.Now;
+
+            var latestSendTime = DateTime.Now;
+
             while (true)
             {
-                Task.Run(async() =>
+                new Task(async() =>
                 {
                     var containerData = await FetchOverviewData();
                     if (ContainerHelpers.OverviewContainersAreDifferent(latestRead.Containers, containerData) ||
@@ -101,7 +103,6 @@ namespace DashboardServer.Updaters
             );
 
             var containerData = new List<OverviewContainerData>();
-
             foreach (var container in containers)
             {
                 containerData.Add(new OverviewContainerData
@@ -113,6 +114,7 @@ namespace DashboardServer.Updaters
                         State = container.State,
                         Status = container.Status,
                         UpdateTime = DateTime.Now,
+                        Health = ContainerHelpers.ExtractHealthDataFromStatus(container.Status)
                 });
             }
 
@@ -173,38 +175,47 @@ namespace DashboardServer.Updaters
             var containers = await _client.Containers.ListContainersAsync(new ContainersListParameters());
 
             var containerData = new List<StatsContainerData>();
-
             foreach (var container in containers)
             {
                 var responseHandler = new Progress<ContainerStatsResponse>(delegate(ContainerStatsResponse ctr)
                 {
-                    if (ctr.PreCPUStats.SystemUsage == 0)return; // it should read stats twice before it's possible to read the relevant data
-                    else
+                    try
                     {
-                        var numOfCpu = ctr.CPUStats.CPUUsage.PercpuUsage.Count;
-                        var currentCpuUsage = ctr.CPUStats.CPUUsage.TotalUsage;
-                        var previousCpuUsage = ctr.PreCPUStats.CPUUsage.TotalUsage;
-                        var currentSystemCpuUsage = ctr.CPUStats.SystemUsage;
-                        var previousSystemCpuUsage = ctr.PreCPUStats.SystemUsage;
-                        containerData.Add(new StatsContainerData
+                        if (ctr.PreCPUStats.SystemUsage == 0)return; // it should read stats twice before it's possible to read the relevant data
+                        else
                         {
-                            Id = container.ID[..10],
-                                Name = container.Names[0][1..],
-                                NumOfCpu = numOfCpu,
-                                CpuUsage = currentCpuUsage,
-                                SystemCpuUsage = currentSystemCpuUsage,
-                                CpuPercentage = CalculateCpuPercentage(numOfCpu, currentCpuUsage, previousCpuUsage, currentSystemCpuUsage, previousSystemCpuUsage),
-                                MemoryPercentage = CalculateMemoryPercentage(ctr.MemoryStats.Limit, ctr.MemoryStats.Usage),
-                                DiskInputBytes = ctr.StorageStats.ReadSizeBytes, // TODO: Check if this value is correct or if you have to use the commented python code at the bottom of this file
-                                DiskOutputBytes = ctr.StorageStats.WriteSizeBytes, // TODO: Same as above
-                                NetInputBytes = CalculateNetInputBytes(ctr),
-                                NetOutputBytes = CalculateNetOutputBytes(ctr),
-                                UpdateTime = DateTime.Now,
-                        });
+                            var numOfCpu = ctr.CPUStats.CPUUsage.PercpuUsage.Count;
+                            var currentCpuUsage = ctr.CPUStats.CPUUsage.TotalUsage;
+                            var previousCpuUsage = ctr.PreCPUStats.CPUUsage.TotalUsage;
+                            var currentSystemCpuUsage = ctr.CPUStats.SystemUsage;
+                            var previousSystemCpuUsage = ctr.PreCPUStats.SystemUsage;
+                            containerData.Add(new StatsContainerData
+                            {
+                                Id = container.ID[..10],
+                                    Name = container.Names[0][1..],
+                                    NumOfCpu = numOfCpu,
+                                    CpuUsage = currentCpuUsage,
+                                    SystemCpuUsage = currentSystemCpuUsage,
+                                    CpuPercentage = CalculateCpuPercentage(numOfCpu, currentCpuUsage, previousCpuUsage, currentSystemCpuUsage, previousSystemCpuUsage),
+                                    MemoryPercentage = CalculateMemoryPercentage(ctr.MemoryStats.Limit, ctr.MemoryStats.Usage),
+                                    DiskInputBytes = ctr.StorageStats.ReadSizeBytes, // TODO: Check if this value is correct or if you have to use the commented python code at the bottom of this file
+                                    DiskOutputBytes = ctr.StorageStats.WriteSizeBytes, // TODO: Same as above
+                                    NetInputBytes = CalculateNetInputBytes(ctr),
+                                    NetOutputBytes = CalculateNetOutputBytes(ctr),
+                                    UpdateTime = DateTime.Now,
+                            });
+                        }
+                    }
+                    catch (System.NullReferenceException)
+                    {
+                        // This will be called in case a container is closed down during a stats read.
+                        // In this case the stats data should just be ignored
+                        Console.WriteLine("Ignored Data for container " + container.ID);
                     }
                 });
                 await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { Stream = false }, responseHandler);
             }
+
             return containerData;
         }
 
