@@ -12,6 +12,9 @@ namespace DashboardServer.Updaters.UpdaterResponses
         public string Name { get; set; }
 
         [JsonProperty(Required = Required.Always)]
+        public string Image { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
         public ulong CpuUsage { get; set; }
 
         [JsonProperty(Required = Required.Always)]

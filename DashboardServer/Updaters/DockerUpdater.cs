@@ -193,6 +193,7 @@ namespace DashboardServer.Updaters
                             {
                                 Id = container.ID[..10],
                                     Name = container.Names[0][1..],
+                                    Image = container.Image,
                                     NumOfCpu = numOfCpu,
                                     CpuUsage = currentCpuUsage,
                                     SystemCpuUsage = currentSystemCpuUsage,
