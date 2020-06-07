@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace DashboardServer.Updaters.UpdaterResponses
 {
-    public struct StatsContainerData
+    public class StatsContainerData
     {
         [JsonProperty(Required = Required.Always)]
         public string Id { get; set; }
