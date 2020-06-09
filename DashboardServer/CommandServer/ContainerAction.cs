@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,21 +22,66 @@ namespace DashboardServer.CommandServer
         {
             try
             {
+                var exposedPorts = new Dictionary<string, EmptyStruct>();
+                var hostPortBindings = new Dictionary<string, IList<PortBinding>>();
+                if (parameters.Ports != null)
+                {
+                    foreach (var portBinding in parameters.Ports)
+                    {
+                        exposedPorts.Add(portBinding.HostPort, default(EmptyStruct));
+                        hostPortBindings.Add(portBinding.ContainerPort, new List<PortBinding> { new PortBinding { HostPort = portBinding.HostPort } });
+                    }
+                }
+                RestartPolicy restartPolicy = new RestartPolicy { Name = RestartPolicyKind.No };
+                if (parameters.RestartPolicy != null)
+                {
+                    restartPolicy.MaximumRetryCount = parameters.RestartPolicy.MaximumRetryCount ?? 0;
+                    switch (parameters.RestartPolicy.RestartPolicy)
+                    {
+                        case ContainerRestartPolicy.Always:
+                            restartPolicy.Name = RestartPolicyKind.Always;
+                            break;
+                        case ContainerRestartPolicy.OnFailure:
+                            restartPolicy.Name = RestartPolicyKind.OnFailure;
+                            break;
+                        case ContainerRestartPolicy.UnlessStopped:
+                            restartPolicy.Name = RestartPolicyKind.UnlessStopped;
+                            break;
+                    }
+                }
+                var environment = new List<string>();
+                if (parameters.Environment != null)
+                {
+                    foreach (var environmentEntry in parameters.Environment)
+                    {
+                        environment.Add(environmentEntry.Key + "=" + environmentEntry.Value);
+                    }
+                }
+                var volumes = new List<string>();
+                if (parameters.Volumes != null)
+                {
+                    foreach (var volumeEntry in parameters.Volumes)
+                    {
+                        volumes.Add(volumeEntry.HostPath + ":" + volumeEntry.ContainerPath);
+                    }
+                }
                 var dockerResponse = await client.Containers.CreateContainerAsync(new CreateContainerParameters
                 {
                     Image = parameters.Image,
-                        Cmd = parameters.Command,
+                        Cmd = parameters.Command == null ? null : parameters.Command.Split(" "),
                         Name = parameters.Name,
+                        ExposedPorts = exposedPorts,
                         HostConfig = new HostConfig
                         {
-                            // PortBindings = parameters.Ports, TODO:
-                            //     RestartPolicy = parameters.RestartPolicy, TODO:
-                            VolumesFrom = parameters.VolumesFrom
+                            PortBindings = hostPortBindings,
+                                PublishAllPorts = true,
+                                RestartPolicy = restartPolicy,
+                                VolumesFrom = parameters.VolumesFrom,
+                                Binds = volumes,
+                                NetworkMode = parameters.NetworkMode,
                         },
-                        Env = parameters.Environment,
-                        // Volumes = parameters.Volumes, TODO:
+                        Env = environment,
                 });
-
                 // Update general info as quickly as possible and send it out so clients can see the newly created container quickly
                 var updatedContainers = await DockerUpdater.FetchOverviewData();
                 var overviewContainerUpdate = DockerUpdater.CreateOverViewData(updatedContainers);
@@ -49,6 +95,7 @@ namespace DashboardServer.CommandServer
                         ContainerIds = new string[] { dockerResponse.ID }
                 }, p);
 
+                await StartContainer(new StartContainerParameters { ContainerId = dockerResponse.ID }, p);
             }
             catch (DockerApiException ex)
             {

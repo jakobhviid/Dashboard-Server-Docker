@@ -214,7 +214,15 @@ namespace DashboardServer.Updaters
                         Console.WriteLine("Ignored Data for container " + container.ID);
                     }
                 });
-                await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { Stream = false }, responseHandler);
+                try
+                {
+                    await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { Stream = false }, responseHandler);
+                }
+                catch (Docker.DotNet.DockerContainerNotFoundException)
+                {
+                    // Race condition if containers are removed while it's fetching stats data.
+                    // Just ignore the removed container
+                }
             }
 
             return containerData;
