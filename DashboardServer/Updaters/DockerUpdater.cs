@@ -207,11 +207,12 @@ namespace DashboardServer.Updaters
                             });
                         }
                     }
-                    catch (System.NullReferenceException)
+                    catch (System.NullReferenceException ex)
                     {
                         // This will be called in case a container is closed down during a stats read.
                         // In this case the stats data should just be ignored
                         Console.WriteLine("Ignored Data for container " + container.ID);
+                        Console.WriteLine(ex);
                     }
                 });
                 try
@@ -247,9 +248,12 @@ namespace DashboardServer.Updaters
         {
             // RX Bytes = total number of bytes recieved over a network
             ulong totalRxBytes = 0;
-            foreach (var network in st.Networks)
+            if (st.Networks != null)
             {
-                totalRxBytes += network.Value.RxBytes;
+                foreach (var network in st.Networks)
+                {
+                    totalRxBytes += network.Value.RxBytes;
+                }
             }
             return totalRxBytes;
         }
@@ -258,9 +262,12 @@ namespace DashboardServer.Updaters
         {
             // TX Bytes = total number of bytes transmitted over a network interface
             ulong totalTxBytes = 0;
-            foreach (var network in st.Networks)
+            if (st.Networks != null)
             {
-                totalTxBytes += network.Value.TxBytes;
+                foreach (var network in st.Networks)
+                {
+                    totalTxBytes += network.Value.TxBytes;
+                }
             }
             return totalTxBytes;
         }

@@ -17,9 +17,9 @@ namespace DashboardServer.CommandServer
         {
             var consumerConfig = new ConsumerConfig
             {
-                GroupId = "command-server",
+                GroupId = "command-server" + KafkaHelpers.Servername,
                 BootstrapServers = KafkaHelpers.BootstrapServers,
-                AutoOffsetReset = AutoOffsetReset.Earliest,
+                AutoOffsetReset = AutoOffsetReset.Latest,
             };
 
             using(var c = new ConsumerBuilder<Ignore, string>(consumerConfig).Build())

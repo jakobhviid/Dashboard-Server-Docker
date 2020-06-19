@@ -31,7 +31,7 @@ namespace DashboardServer.Helpers
                 if (!lastRead.Name.Equals(currentRead.Name))return true;
                 if (!lastRead.State.Equals(currentRead.State))return true;
                 var currentHealthData = ExtractHealthDataFromStatus(currentRead.Status);
-                if (lastRead.Health != null && !lastRead.Health.Equals(currentHealthData)) return true;
+                if (lastRead.Health != null && !lastRead.Health.Equals(currentHealthData))return true;
                 if (!lastRead.CreationTime.Equals(currentRead.CreationTime))return true;
 
             }
@@ -65,6 +65,10 @@ namespace DashboardServer.Helpers
                 // The Docker API always returns the containers in the same order as long as new containers haven't been added. In which case information should be sent again
                 StatsContainerData lastRead = lastContainerReads[i];
                 StatsContainerData currentRead = currentContainerReads[i];
+                if (lastRead == null || currentRead == null)
+                {
+                    containerIsDifferent = true;
+                }
                 if (!lastRead.Id.Equals(currentRead.Id))containerIsDifferent = true;
 
                 if (!lastRead.Name.Equals(currentRead.Name))containerIsDifferent = true;
