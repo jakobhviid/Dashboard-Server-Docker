@@ -39,12 +39,11 @@ namespace DashboardServer.Helpers
             return false;
         }
 
-        // TODO: environment variables for these tolerances?
-        private readonly static int _percentageTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("CPU_MEM_TOLERANCE_PERCENT")) == 0 ? 15 : Convert.ToInt32(Environment.GetEnvironmentVariable("CPU_MEM_TOLERANCE_PERCENT"));
-        private readonly static int _netInputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("NET_INPUT_TOLERANCE_BYTES")) == 0 ? 100 : Convert.ToInt32(Environment.GetEnvironmentVariable("NET_INPUT_TOLERANCE_BYTES"));
-        private readonly static int _netOutputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("NET_OUTPUT_TOLERANCE_BYTES")) == 0 ? 100 : Convert.ToInt32(Environment.GetEnvironmentVariable("NET_OUTPUT_TOLERANCE_BYTES"));
-        private readonly static int _diskInputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_INPUT_TOLERANCE_BYTES")) == 0 ? 100 : Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_INPUT_TOLERANCE_BYTES"));
-        private readonly static int _diskOutputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_OUTPUT_TOLERANCE_BYTES")) == 0 ? 100 : Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_INPUT_TOLERANCE_BYTES"));
+        private readonly static int _percentageTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("CPU_MEM_TOLERANCE_PERCENT")) == 0 ? 35 : Convert.ToInt32(Environment.GetEnvironmentVariable("CPU_MEM_TOLERANCE_PERCENT"));
+        private readonly static int _netInputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("NET_INPUT_TOLERANCE_BYTES")) == 0 ? 500 : Convert.ToInt32(Environment.GetEnvironmentVariable("NET_INPUT_TOLERANCE_BYTES"));
+        private readonly static int _netOutputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("NET_OUTPUT_TOLERANCE_BYTES")) == 0 ? 500 : Convert.ToInt32(Environment.GetEnvironmentVariable("NET_OUTPUT_TOLERANCE_BYTES"));
+        private readonly static int _diskInputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_INPUT_TOLERANCE_BYTES")) == 0 ? 500 : Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_INPUT_TOLERANCE_BYTES"));
+        private readonly static int _diskOutputBytesTolerance = Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_OUTPUT_TOLERANCE_BYTES")) == 0 ? 500 : Convert.ToInt32(Environment.GetEnvironmentVariable("DISK_INPUT_TOLERANCE_BYTES"));
 
         public static string ExtractHealthDataFromStatus(string containerStatus)
         {

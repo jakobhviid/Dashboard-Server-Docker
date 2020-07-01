@@ -15,7 +15,7 @@ namespace DashboardServer.Updaters
         private static readonly DockerClient _client = new DockerClientConfiguration(new Uri("unix:///var/run/docker.sock")).CreateClient();
         public const string OverviewTopic = "f0e1e946-50d0-4a2b-b1a5-f21b92e09ac1-general_info";
         public const string StatsTopic = "33a325ce-b0c0-43a7-a846-4f46acdb367e-stats_info";
-        private static int _checkInterval = Convert.ToInt32(Environment.GetEnvironmentVariable("CHECK_INTERVAL_SECONDS")) == 0 ? 5 : Convert.ToInt32(Environment.GetEnvironmentVariable("CHECK_INTERVAL_SECONDS"));
+        private static int _checkInterval = Convert.ToInt32(Environment.GetEnvironmentVariable("CHECK_INTERVAL_SECONDS")) == 0 ? 15 : Convert.ToInt32(Environment.GetEnvironmentVariable("CHECK_INTERVAL_SECONDS"));
         private static int _sendInterval = 15;
         private static string[] _processesToStart = (Environment.GetEnvironmentVariable("PROCESSES_TO_START") ?? "overviewdata,statsdata,commandserver").Split(",");
 

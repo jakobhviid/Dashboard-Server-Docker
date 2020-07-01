@@ -8,7 +8,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       PROCESSES_TO_START: overviewdata,statsdata,commandserver
-      ADVERTISED_COMMAND_URL: http://127.0.0.1:5000
       SERVER_NAME: OliversMBP
       KAFKA_URL: kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092
       CHECK_INTERVAL_SECONDS: 5
