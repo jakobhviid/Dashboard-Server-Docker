@@ -10,7 +10,7 @@ When the image is started, it sends different sorts of information:
 The image will send docker information atleast every 15 minutes, however it will also send if something important happens, e.g. a container stopping, unhealthy or if a container uses more ressources then the allowed threshold (defined through enviorment variables).
 
 # How to use
-This docker-compose file show the deployment of the dashboard-server container.
+This docker-compose file shows the deployment of the dashboard-server container.
 
 ```
 version: "3"
@@ -27,13 +27,13 @@ services:
 ```
 
 # Configuration
-##### Required environment variables
+#### Required environment variables
 
 - `DOCKER SOCKET`: This enables necessary communications with the Docker Engine API. It is required to provide the host docker socket through volumes ('/var/run/docker.sock:/var/run/docker.sock'). The image will fail if it is not provided.
 
 - `SERVER_NAME`: Defines the name of the server which will be displayed in the [Docker-Dashboard-Interface](https://github.com/jakobhviid/Dashboard-Server-Interface). This has to be unique from other docker dashboard servers. Required.
 
-##### Optional environment variables
+#### Optional environment variables
 
 - `KAFKA_URL`: Comma seperated list of one or more kafka urls. It will default to cfei's own kafka cluster 'kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092'.
 
