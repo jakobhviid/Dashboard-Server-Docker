@@ -23,7 +23,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       SERVER_NAME: CfeiServer1
-      CHECK_INTERVAL_SECONDS: 5
 ```
 
 # Configuration
@@ -39,7 +38,7 @@ services:
 
 - `PROCESSES_TO_START`: With this variable it is possible to define what processes inside the image should start. So if the value of this variable is 'overviewdata,commandserver' statsdata will not be sent. The available processes are 'overviewdata', 'statsdata' & 'commandserver'. By default all processes will be started and is the recommended setting.
 
-- `CHECK_INTERVAL_SECONDS`: The image uses two different timers. The first is a send interval which is 15 minutes, the second is a check interval. The check interval defines how often the image checks if some of the containers have changed. The lower the interval the more ressources this image will use. It defaults to 15 seconds.
+- `CHECK_INTERVAL_SECONDS`: The image uses two different timers. The first is a send interval which is 15 minutes, the second is a check interval. The check interval defines how often the image checks if some of the containers have changed. The lower the interval the more ressources this image will use but it will also detect health issues quicker. So for critical images lower it to meet uptime requirements. It defaults to 15 seconds.
 
 **Tolerances**
 When the image collects docker stats data it will only send data if these tolerances are exceeded.
