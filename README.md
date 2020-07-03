@@ -23,7 +23,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       SERVER_NAME: CfeiServer1
-      CHECK_INTERVAL_SECONDS: 5
 ```
 
 # Configuration
