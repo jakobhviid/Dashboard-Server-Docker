@@ -2,10 +2,9 @@ version: "3"
 
 services:
   server:
-    image: omvk97/docker-dashboard-server
+    image: omvk97/dashboard-server
     container_name: dashboard-server
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       SERVER_NAME: OliversMBP
-      CHECK_INTERVAL_SECONDS: 5

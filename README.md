@@ -17,7 +17,7 @@ version: "3"
 
 services:
   server:
-    image: cfei/docker-dashboard-server
+    image: cfei/dashboard-server
     container_name: dashboard-server
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
