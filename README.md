@@ -1,6 +1,6 @@
 # About
 This image is a part of the CFEI kafka / zookeeper stack.
-It sends real time docker information to [Docker-Dashboard-Interface](https://github.com/jakobhviid/Dashboard-Server-Interface)
+It sends real time docker information to [Docker-Dashboard-Interface](https://github.com/jakobhviid/Dashboard-Interface-Docker)
 
 When the image is started, it sends different sorts of information:
 * **Overview** docker information about both the running and stopped containers on which the image is running. This information is similar to the information docker displays with the command 'docker ps' / 'docker container ls'
