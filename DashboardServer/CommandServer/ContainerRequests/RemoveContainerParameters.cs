@@ -1,9 +1,7 @@
 using Newtonsoft.Json;
 
-namespace DashboardServer.CommandServer.ContainerRequests
-{
-    public class RemoveContainerParameters
-    {
+namespace DashboardServer.CommandServer.ContainerRequests {
+    public class RemoveContainerParameters {
         [JsonProperty(Required = Required.Always)]
         public const ContainerActionType Action = ContainerActionType.REMOVE;
 

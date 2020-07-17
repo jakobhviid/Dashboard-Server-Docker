@@ -1,9 +1,7 @@
 using Newtonsoft.Json;
 
-namespace DashboardServer.CommandServer.ContainerResponses
-{
-    public class ContainerResponse
-    {
+namespace DashboardServer.CommandServer.ContainerResponses {
+    public class ContainerResponse {
         [JsonProperty(Required = Required.Always)]
         public int ResponseStatusCode { get; set; }
 

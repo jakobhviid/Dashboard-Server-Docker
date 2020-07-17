@@ -1,7 +1,5 @@
-namespace DashboardServer.CommandServer.Contracts
-{
-    public static class ResponseMessageContracts
-    {
+namespace DashboardServer.CommandServer.Contracts {
+    public static class ResponseMessageContracts {
         public const string CONTAINER_CREATED = "Container successfully created";
         public const string CONTAINER_STARTED = "Container successfully started";
         public const string CONTAINER_STOPPED = "Container succesfully stopped";

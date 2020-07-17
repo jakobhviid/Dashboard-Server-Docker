@@ -1,11 +1,9 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace DashboardServer.CommandServer.ContainerRequests
-{
-    [JsonConverter(typeof(StringEnumConverter))]  
-    public enum ContainerActionType
-    {
+namespace DashboardServer.CommandServer.ContainerRequests {
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum ContainerActionType {
         RUN_NEW,
         START,
         STOP,
@@ -16,8 +14,7 @@ namespace DashboardServer.CommandServer.ContainerRequests
         REFETCH_OVERVIEW,
         REFETCH_STATS
     }
-    public struct ContainerRequest
-    {
+    public struct ContainerRequest {
         [JsonProperty(Required = Required.Always)]
         public ContainerActionType Action { get; set; }
     }

@@ -1,9 +1,7 @@
 using Newtonsoft.Json;
 
-namespace DashboardServer.CommandServer.ContainerRequests
-{
-    public class RenameContainerParameter
-    {
+namespace DashboardServer.CommandServer.ContainerRequests {
+    public class RenameContainerParameter {
         [JsonProperty(Required = Required.Always)]
         public const ContainerActionType Action = ContainerActionType.RENAME;
         [JsonProperty(Required = Required.Always)]

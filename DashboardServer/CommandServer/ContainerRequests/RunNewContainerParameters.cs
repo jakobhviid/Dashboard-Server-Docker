@@ -4,11 +4,9 @@ using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace DashboardServer.CommandServer.ContainerRequests
-{
+namespace DashboardServer.CommandServer.ContainerRequests {
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum ContainerRestartPolicy
-    {
+    public enum ContainerRestartPolicy {
         [EnumMember(Value = "always")]
         Always, [EnumMember(Value = "onFailure")]
         OnFailure, [EnumMember(Value = "unlessStopped")]
@@ -16,8 +14,7 @@ namespace DashboardServer.CommandServer.ContainerRequests
         None
     }
 
-    public class ContainerRestart
-    {
+    public class ContainerRestart {
         [JsonProperty(Required = Required.Always)]
         public ContainerRestartPolicy RestartPolicy { get; set; }
 
@@ -25,8 +22,7 @@ namespace DashboardServer.CommandServer.ContainerRequests
         public int? MaximumRetryCount { get; set; }
     }
 
-    public class ContainerPortBinding
-    {
+    public class ContainerPortBinding {
         [JsonProperty(Required = Required.Always)]
         public string ContainerPort { get; set; }
 
@@ -34,16 +30,14 @@ namespace DashboardServer.CommandServer.ContainerRequests
         public string HostPort { get; set; }
     }
 
-    public class ContainerEnvironmentEntry
-    {
+    public class ContainerEnvironmentEntry {
         [JsonProperty(Required = Required.Always)]
         public string Key { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public string Value { get; set; }
     }
-    public class ContainerVolumeEntry
-    {
+    public class ContainerVolumeEntry {
         [JsonProperty(Required = Required.Always)]
         public string HostPath { get; set; }
 
@@ -51,8 +45,7 @@ namespace DashboardServer.CommandServer.ContainerRequests
         public string ContainerPath { get; set; }
     }
 
-    public class RunNewContainerParameters
-    {
+    public class RunNewContainerParameters {
         public ContainerActionType Action = ContainerActionType.RUN_NEW;
         [JsonProperty(Required = Required.Always)]
         public string Image { get; set; }

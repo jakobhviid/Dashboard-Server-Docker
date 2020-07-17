@@ -9,34 +9,25 @@ using DashboardServer.CommandServer.Contracts;
 using DashboardServer.Helpers;
 using Newtonsoft.Json;
 
-namespace DashboardServer.CommandServer
-{
-    public class CommandServer
-    {
-        public static async void Start(CancellationTokenSource cts)
-        {
-            var consumerConfig = new ConsumerConfig
-            {
+namespace DashboardServer.CommandServer {
+    public class CommandServer {
+        public static async void Start(CancellationTokenSource cts) {
+            var consumerConfig = new ConsumerConfig {
                 GroupId = "command-server" + KafkaHelpers.Servername,
                 BootstrapServers = KafkaHelpers.BootstrapServers,
                 AutoOffsetReset = AutoOffsetReset.Latest,
             };
 
-            using(var c = new ConsumerBuilder<Ignore, string>(consumerConfig).Build())
-            {
+            using (var c = new ConsumerBuilder<Ignore, string>(consumerConfig).Build()) {
 
                 c.Subscribe(KafkaHelpers.RequestTopic);
 
                 Console.WriteLine($"Listening for commands on topic {KafkaHelpers.RequestTopic}");
-                try
-                {
+                try {
                     var producerConfig = new ProducerConfig { BootstrapServers = KafkaHelpers.BootstrapServers, Acks = Acks.Leader };
-                    using(var p = new ProducerBuilder<Null, string>(producerConfig).Build())
-                    {
-                        while (true)
-                        {
-                            try
-                            {
+                    using (var p = new ProducerBuilder<Null, string>(producerConfig).Build()) {
+                        while (true) {
+                            try {
                                 var consumeResult = c.Consume(cts.Token); // Polling for new messages, waiting here until message recieved
 
                                 var messageJsonString = consumeResult.Message.Value;
@@ -44,25 +35,17 @@ namespace DashboardServer.CommandServer
                                 ContainerRequest request = JsonConvert.DeserializeObject<ContainerRequest>(messageJsonString);
                                 await CallAction(request.Action, messageJsonString, p);
 
-                            }
-                            catch (ConsumeException ex)
-                            {
+                            } catch (ConsumeException ex) {
                                 Console.Error.WriteLine(ex.Error);
-                            }
-                            catch (Newtonsoft.Json.JsonException ex)
-                            {
-                                await KafkaHelpers.SendMessageAsync(KafkaHelpers.ResponseTopic, new ContainerResponse
-                                {
+                            } catch (Newtonsoft.Json.JsonException ex) {
+                                await KafkaHelpers.SendMessageAsync(KafkaHelpers.ResponseTopic, new ContainerResponse {
                                     ResponseStatusCode = 400,
-                                        Message = ex.Message
+                                    Message = ex.Message
                                 }, p);
                             }
                         }
                     }
-                }
-                catch (OperationCanceledException) { }
-                finally
-                {
+                } catch (OperationCanceledException) { } finally {
                     // Ensure the consumer leaves the group cleanly and final offsets are committed.
                     c.Close();
                 }
@@ -70,10 +53,8 @@ namespace DashboardServer.CommandServer
             }
         }
 
-        private async static Task CallAction(ContainerActionType action, string jsonParameterString, IProducer<Null, String> p)
-        {
-            switch (action)
-            {
+        private async static Task CallAction(ContainerActionType action, string jsonParameterString, IProducer<Null, String> p) {
+            switch (action) {
                 case ContainerActionType.RUN_NEW:
                     var runNewParam = JsonConvert.DeserializeObject<RunNewContainerParameters>(jsonParameterString);
                     await ContainerAction.RunNewContainer(runNewParam, p);
