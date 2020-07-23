@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace DashboardServer {
     public class Program {
         static async Task Main(string[] args) {
+            
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (_, e) => {
                 // when CTRL C is pressed, terminate the process. Otherwise keep it going
@@ -14,7 +15,7 @@ namespace DashboardServer {
                 cts.Cancel();
                 System.Environment.Exit(0);
             };
-            var processesToStart = (Environment.GetEnvironmentVariable("PROCESSES_TO_START") ?? "overviewdata,statsdata,commandserver").Split(",");
+            var processesToStart = (Environment.GetEnvironmentVariable("DASHBOARDS_PROCESSES_TO_START") ?? "overviewdata,statsdata,commandserver").Split(",");
 
             IList<Task> tasks = new List<Task>();
 

@@ -8,34 +8,35 @@ using DashboardServer.Updaters.UpdaterResponses;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 
-namespace DashboardServer.Updaters
-{
-    public class DockerUpdater
-    {
+namespace DashboardServer.Updaters {
+    public class DockerUpdater {
         private static readonly DockerClient _client = new DockerClientConfiguration(new Uri("unix:///var/run/docker.sock")).CreateClient();
         public const string OverviewTopic = "f0e1e946-50d0-4a2b-b1a5-f21b92e09ac1-general_info";
         public const string StatsTopic = "33a325ce-b0c0-43a7-a846-4f46acdb367e-stats_info";
-        private static int _checkInterval = Convert.ToInt32(Environment.GetEnvironmentVariable("CHECK_INTERVAL_SECONDS")) == 0 ? 15 : Convert.ToInt32(Environment.GetEnvironmentVariable("CHECK_INTERVAL_SECONDS"));
+        private static int _checkInterval = Convert.ToInt32(Environment.GetEnvironmentVariable("DASHBOARDS_CHECK_INTERVAL_SECONDS")) == 0 ? 15 : Convert.ToInt32(Environment.GetEnvironmentVariable("DASHBOARDS_CHECK_INTERVAL_SECONDS"));
         private static int _sendInterval = 15;
-        private static string[] _processesToStart = (Environment.GetEnvironmentVariable("PROCESSES_TO_START") ?? "overviewdata,statsdata,commandserver").Split(",");
+        private static string[] _processesToStart = (Environment.GetEnvironmentVariable("DASHBOARDS_PROCESSES_TO_START") ?? "overviewdata,statsdata,commandserver").Split(",");
 
-        public static void Start()
-        {
-            var producerConfig = new ProducerConfig
-            {
-                BootstrapServers = KafkaHelpers.BootstrapServers,
-                Acks = Acks.Leader
-            };
+        public static void Start() {
+            var producerConfig = new ProducerConfig { BootstrapServers = KafkaHelpers.BootstrapServers, Acks = Acks.Leader };
+            var saslEnabled = Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_PUBLIC_URL");
+            if (saslEnabled != null) {
+                producerConfig.SecurityProtocol = SecurityProtocol.SaslPlaintext;
+                producerConfig.SaslKerberosServiceName = "kafka";
+                producerConfig.SaslKerberosKeytab = "/sasl/dashboards.service.keytab";
+
+                // If the principal has been provided through volumes. The environment variable 'DASHBOARDS_KERBEROS_PRINCIPAL' will be set. If not 'DASHBOARDS_KERBEROS_API_SERVICE_USERNAME' will be set.
+                var principalName = "dashboardserver@KAFKA.SECURE";
+                producerConfig.SaslKerberosPrincipal = principalName;
+            }
             using var p = new ProducerBuilder<Null, string>(producerConfig).Build();
 
             Task[] tester = new Task[2];
-            if (_processesToStart.Contains("overviewdata"))
-            {
+            if (_processesToStart.Contains("overviewdata")) {
                 var overviewTask = SendOverViewData(p);
                 tester[0] = overviewTask;
             }
-            if (_processesToStart.Contains("statsdata"))
-            {
+            if (_processesToStart.Contains("statsdata")) {
                 var statsTask = SendStatsData(p);
                 tester[1] = statsTask;
             }
@@ -43,28 +44,23 @@ namespace DashboardServer.Updaters
             Task.WaitAll(tester);
         }
 
-        public struct OverViewData
-        {
+        public struct OverViewData {
             public string Servername { get; set; }
             public IList<OverviewContainerData> Containers { get; set; }
             public string CommandRequestTopic { get; set; }
             public string CommandResponseTopic { get; set; }
         }
 
-        private static async Task SendOverViewData(IProducer<Null, string> p)
-        {
+        private static async Task SendOverViewData(IProducer<Null, string> p) {
             var latestRead = CreateOverViewData();
 
             var latestSendTime = DateTime.Now;
 
-            while (true)
-            {
-                new Task(async() =>
-                {
+            while (true) {
+                new Task(async () => {
                     var containerData = await FetchOverviewData();
                     if (ContainerHelpers.OverviewContainersAreDifferent(latestRead.Containers, containerData) ||
-                        latestSendTime.AddMinutes(_sendInterval) < DateTime.Now)
-                    {
+                        latestSendTime.AddMinutes(_sendInterval) < DateTime.Now) {
                         latestRead.Containers = containerData;
                         latestSendTime = DateTime.Now;
                         await KafkaHelpers.SendMessageAsync(OverviewTopic, latestRead, p);
@@ -75,11 +71,9 @@ namespace DashboardServer.Updaters
             }
         }
 
-        public static OverViewData CreateOverViewData(IList<OverviewContainerData> containers = null)
-        {
-            OverViewData overViewData = new OverViewData
-            {
-            Servername = KafkaHelpers.Servername
+        public static OverViewData CreateOverViewData(IList<OverviewContainerData> containers = null) {
+            OverViewData overViewData = new OverViewData {
+                Servername = KafkaHelpers.Servername
             };
 
             if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
@@ -93,47 +87,40 @@ namespace DashboardServer.Updaters
             return overViewData;
         }
 
-        public static async Task<IList<OverviewContainerData>> FetchOverviewData()
-        {
+        public static async Task<IList<OverviewContainerData>> FetchOverviewData() {
             var containers = await _client.Containers.ListContainersAsync(
-                new ContainersListParameters
-                {
+                new ContainersListParameters {
                     All = true,
                 }
             );
 
             var containerData = new List<OverviewContainerData>();
-            foreach (var container in containers)
-            {
-                containerData.Add(new OverviewContainerData
-                {
+            foreach (var container in containers) {
+                containerData.Add(new OverviewContainerData {
                     Id = container.ID[..10],
-                        Name = container.Names[0][1..],
-                        Image = container.Image,
-                        CreationTime = container.Created,
-                        State = container.State,
-                        Status = container.Status,
-                        UpdateTime = DateTime.Now,
-                        Health = ContainerHelpers.ExtractHealthDataFromStatus(container.Status)
+                    Name = container.Names[0][1..],
+                    Image = container.Image,
+                    CreationTime = container.Created,
+                    State = container.State,
+                    Status = container.Status,
+                    UpdateTime = DateTime.Now,
+                    Health = ContainerHelpers.ExtractHealthDataFromStatus(container.Status)
                 });
             }
 
             return containerData;
         }
 
-        public struct StatsData
-        {
+        public struct StatsData {
             public string Servername { get; set; }
             public IList<StatsContainerData> Containers { get; set; }
             public string CommandRequestTopic { get; set; }
             public string CommandResponseTopic { get; set; }
         }
 
-        public static StatsData CreateStatsData(IList<StatsContainerData> containers = null)
-        {
-            StatsData latestRead = new StatsData
-            {
-            Servername = KafkaHelpers.Servername
+        public static StatsData CreateStatsData(IList<StatsContainerData> containers = null) {
+            StatsData latestRead = new StatsData {
+                Servername = KafkaHelpers.Servername
             };
 
             if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
@@ -146,20 +133,16 @@ namespace DashboardServer.Updaters
 
             return latestRead;
         }
-        private static async Task SendStatsData(IProducer<Null, string> p)
-        {
+        private static async Task SendStatsData(IProducer<Null, string> p) {
             StatsData latestRead = CreateStatsData();
 
             var latestSendTime = DateTime.Now;
 
-            while (true)
-            {
-                new Task(async() =>
-                {
+            while (true) {
+                new Task(async () => {
                     var containerData = await FetchStatsData();
                     if (ContainerHelpers.StatsContainersAreDifferent(latestRead.Containers, containerData) ||
-                        latestSendTime.AddMinutes(_sendInterval) < DateTime.Now)
-                    {
+                        latestSendTime.AddMinutes(_sendInterval) < DateTime.Now) {
                         latestRead.Containers = containerData;
                         latestSendTime = DateTime.Now;
                         await KafkaHelpers.SendMessageAsync(StatsTopic, latestRead, p);
@@ -170,57 +153,46 @@ namespace DashboardServer.Updaters
             }
         }
 
-        public static async Task<IList<StatsContainerData>> FetchStatsData()
-        {
+        public static async Task<IList<StatsContainerData>> FetchStatsData() {
             var containers = await _client.Containers.ListContainersAsync(new ContainersListParameters());
 
             var containerData = new List<StatsContainerData>();
-            foreach (var container in containers)
-            {
-                var responseHandler = new Progress<ContainerStatsResponse>(delegate(ContainerStatsResponse ctr)
-                {
-                    try
-                    {
-                        if (ctr.PreCPUStats.SystemUsage == 0)return; // it should read stats twice before it's possible to read the relevant data
-                        else
-                        {
+            foreach (var container in containers) {
+                var responseHandler = new Progress<ContainerStatsResponse>(delegate (ContainerStatsResponse ctr) {
+                    try {
+                        if (ctr.PreCPUStats.SystemUsage == 0) return; // it should read stats twice before it's possible to read the relevant data
+                        else {
                             var numOfCpu = ctr.CPUStats.CPUUsage.PercpuUsage.Count;
                             var currentCpuUsage = ctr.CPUStats.CPUUsage.TotalUsage;
                             var previousCpuUsage = ctr.PreCPUStats.CPUUsage.TotalUsage;
                             var currentSystemCpuUsage = ctr.CPUStats.SystemUsage;
                             var previousSystemCpuUsage = ctr.PreCPUStats.SystemUsage;
-                            containerData.Add(new StatsContainerData
-                            {
+                            containerData.Add(new StatsContainerData {
                                 Id = container.ID[..10],
-                                    Name = container.Names[0][1..],
-                                    Image = container.Image,
-                                    NumOfCpu = numOfCpu,
-                                    CpuUsage = currentCpuUsage,
-                                    SystemCpuUsage = currentSystemCpuUsage,
-                                    CpuPercentage = CalculateCpuPercentage(numOfCpu, currentCpuUsage, previousCpuUsage, currentSystemCpuUsage, previousSystemCpuUsage),
-                                    MemoryPercentage = CalculateMemoryPercentage(ctr.MemoryStats.Limit, ctr.MemoryStats.Usage),
-                                    DiskInputBytes = ctr.StorageStats.ReadSizeBytes, // TODO: Check if this value is correct or if you have to use the commented python code at the bottom of this file
-                                    DiskOutputBytes = ctr.StorageStats.WriteSizeBytes, // TODO: Same as above
-                                    NetInputBytes = CalculateNetInputBytes(ctr),
-                                    NetOutputBytes = CalculateNetOutputBytes(ctr),
-                                    UpdateTime = DateTime.Now,
+                                Name = container.Names[0][1..],
+                                Image = container.Image,
+                                NumOfCpu = numOfCpu,
+                                CpuUsage = currentCpuUsage,
+                                SystemCpuUsage = currentSystemCpuUsage,
+                                CpuPercentage = CalculateCpuPercentage(numOfCpu, currentCpuUsage, previousCpuUsage, currentSystemCpuUsage, previousSystemCpuUsage),
+                                MemoryPercentage = CalculateMemoryPercentage(ctr.MemoryStats.Limit, ctr.MemoryStats.Usage),
+                                DiskInputBytes = ctr.StorageStats.ReadSizeBytes, // TODO: Check if this value is correct or if you have to use the commented python code at the bottom of this file
+                                DiskOutputBytes = ctr.StorageStats.WriteSizeBytes, // TODO: Same as above
+                                NetInputBytes = CalculateNetInputBytes(ctr),
+                                NetOutputBytes = CalculateNetOutputBytes(ctr),
+                                UpdateTime = DateTime.Now,
                             });
                         }
-                    }
-                    catch (System.NullReferenceException ex)
-                    {
+                    } catch (System.NullReferenceException ex) {
                         // This will be called in case a container is closed down during a stats read.
                         // In this case the stats data should just be ignored
                         Console.WriteLine("Ignored Data for container " + container.ID);
                         Console.WriteLine(ex);
                     }
                 });
-                try
-                {
+                try {
                     await _client.Containers.GetContainerStatsAsync(container.ID, new ContainerStatsParameters { Stream = false }, responseHandler);
-                }
-                catch (Docker.DotNet.DockerContainerNotFoundException)
-                {
+                } catch (Docker.DotNet.DockerContainerNotFoundException) {
                     // Race condition if containers are removed while it's fetching stats data.
                     // Just ignore the removed container
                 }
@@ -229,8 +201,7 @@ namespace DashboardServer.Updaters
             return containerData;
         }
 
-        private static double CalculateCpuPercentage(int numOfCpu, ulong currentCpuUsage, ulong previousCpuUsage, ulong currentSystemCpuUsage, ulong previousSystemCpuUsage)
-        {
+        private static double CalculateCpuPercentage(int numOfCpu, ulong currentCpuUsage, ulong previousCpuUsage, ulong currentSystemCpuUsage, ulong previousSystemCpuUsage) {
             float cpuDelta = currentCpuUsage - previousCpuUsage;
             float systemCpuDelta = currentSystemCpuUsage - previousSystemCpuUsage;
             var CpuPercentage = ((cpuDelta / systemCpuDelta) * (ulong)numOfCpu) * 100;
@@ -238,34 +209,27 @@ namespace DashboardServer.Updaters
             return Math.Round(CpuPercentage, 2); // round down to two decimals
         }
 
-        private static double CalculateMemoryPercentage(ulong memoryLimit, ulong memoryUsage)
-        {
+        private static double CalculateMemoryPercentage(ulong memoryLimit, ulong memoryUsage) {
             double memoryPercentage = ((double)memoryUsage / (double)memoryLimit) * 100;
             return Math.Round(memoryPercentage, 2);
         }
 
-        private static ulong CalculateNetInputBytes(ContainerStatsResponse st)
-        {
+        private static ulong CalculateNetInputBytes(ContainerStatsResponse st) {
             // RX Bytes = total number of bytes recieved over a network
             ulong totalRxBytes = 0;
-            if (st.Networks != null)
-            {
-                foreach (var network in st.Networks)
-                {
+            if (st.Networks != null) {
+                foreach (var network in st.Networks) {
                     totalRxBytes += network.Value.RxBytes;
                 }
             }
             return totalRxBytes;
         }
 
-        private static ulong CalculateNetOutputBytes(ContainerStatsResponse st)
-        {
+        private static ulong CalculateNetOutputBytes(ContainerStatsResponse st) {
             // TX Bytes = total number of bytes transmitted over a network interface
             ulong totalTxBytes = 0;
-            if (st.Networks != null)
-            {
-                foreach (var network in st.Networks)
-                {
+            if (st.Networks != null) {
+                foreach (var network in st.Networks) {
                     totalTxBytes += network.Value.TxBytes;
                 }
             }

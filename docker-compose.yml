@@ -2,9 +2,16 @@ version: "3"
 
 services:
   server:
-    image: omvk97/dashboard-server
+    image: cfei/dashboard-server
     container_name: dashboard-server
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      SERVER_NAME: OliversMBP
+      DASHBOARDS_SERVER_NAME: OliversMBP
+      DASHBOARDS_KAFKA_URL: 167.71.73.178:9093
+      DASHBOARDS_KERBEROS_PUBLIC_URL: 167.71.73.178
+      DASHBOARDS_KERBEROS_REALM: KAFKA.SECURE
+      DASHBOARDS_KERBEROS_API_URL: http://167.71.73.178:6000/get-keytab
+      DASHBOARDS_KERBEROS_API_SERVICE_USERNAME: dashboardserver
+      DASHBOARDS_KERBEROS_API_SERVICE_PASSWORD: dashboardServerPassword
+      DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME: kafka
