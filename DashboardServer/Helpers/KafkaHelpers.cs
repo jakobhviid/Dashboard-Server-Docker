@@ -31,5 +31,21 @@ namespace DashboardServer.Helpers {
                 Console.WriteLine($"Error serializing {e.Message}");
             }
         }
+
+        public static ClientConfig SetKafkaConfigKerberos(ClientConfig config) {
+            var saslEnabled = Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_PUBLIC_URL");
+
+            if (saslEnabled != null) {
+                config.SecurityProtocol = SecurityProtocol.SaslPlaintext;
+                config.SaslKerberosServiceName = Environment.GetEnvironmentVariable("DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME");
+                config.SaslKerberosKeytab = Environment.GetEnvironmentVariable("KEYTAB_LOCATION");
+
+                // If the principal has been provided through volumes. The environment variable 'DASHBOARDS_KERBEROS_PRINCIPAL' will be set. If not 'DASHBOARDS_KERBEROS_API_SERVICE_USERNAME' will be set.
+                var principalName = Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_PRINCIPAL") ?? Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_API_SERVICE_USERNAME");
+                config.SaslKerberosPrincipal = principalName;
+            }
+
+            return config;
+        }
     }
 }

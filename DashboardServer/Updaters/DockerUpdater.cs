@@ -19,16 +19,8 @@ namespace DashboardServer.Updaters {
 
         public static void Start() {
             var producerConfig = new ProducerConfig { BootstrapServers = KafkaHelpers.BootstrapServers, Acks = Acks.Leader };
-            var saslEnabled = Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_PUBLIC_URL");
-            if (saslEnabled != null) {
-                producerConfig.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-                producerConfig.SaslKerberosServiceName = "kafka";
-                producerConfig.SaslKerberosKeytab = "/sasl/dashboards.service.keytab";
-
-                // If the principal has been provided through volumes. The environment variable 'DASHBOARDS_KERBEROS_PRINCIPAL' will be set. If not 'DASHBOARDS_KERBEROS_API_SERVICE_USERNAME' will be set.
-                var principalName = "dashboardserver@KAFKA.SECURE";
-                producerConfig.SaslKerberosPrincipal = principalName;
-            }
+            KafkaHelpers.SetKafkaConfigKerberos(producerConfig);
+            
             using var p = new ProducerBuilder<Null, string>(producerConfig).Build();
 
             Task[] tester = new Task[2];

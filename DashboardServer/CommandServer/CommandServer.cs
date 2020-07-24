@@ -19,18 +19,7 @@ namespace DashboardServer.CommandServer {
                 AutoOffsetReset = AutoOffsetReset.Latest,
             };
 
-            var saslEnabled = Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_PUBLIC_URL");
-
-            if (saslEnabled != null) {
-                consumerConfig.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-                consumerConfig.SaslKerberosServiceName = Environment.GetEnvironmentVariable("DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME");
-                consumerConfig.SaslKerberosKeytab = Environment.GetEnvironmentVariable("KEYTAB_LOCATION");
-
-                // If the principal has been provided through volumes. The environment variable 'DASHBOARDS_KERBEROS_PRINCIPAL' will be set. If not 'DASHBOARDS_KERBEROS_API_SERVICE_USERNAME' will be set.
-                var principalName = Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_PRINCIPAL") ?? Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_API_SERVICE_USERNAME");
-                Console.WriteLine(principalName);
-                consumerConfig.SaslKerberosPrincipal = principalName + "@KAFKA.SECURE";
-            }
+            KafkaHelpers.SetKafkaConfigKerberos(consumerConfig);
 
 
             using (var c = new ConsumerBuilder<Ignore, string>(consumerConfig).Build()) {
@@ -40,15 +29,8 @@ namespace DashboardServer.CommandServer {
                 Console.WriteLine($"Listening for commands on topic {KafkaHelpers.RequestTopic}");
                 try {
                     var producerConfig = new ProducerConfig { BootstrapServers = KafkaHelpers.BootstrapServers, Acks = Acks.Leader };
-                    if (saslEnabled != null) {
-                        producerConfig.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-                        producerConfig.SaslKerberosServiceName = Environment.GetEnvironmentVariable("DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME");
-                        producerConfig.SaslKerberosKeytab = Environment.GetEnvironmentVariable("KEYTAB_LOCATION");
-
-                        // If the principal has been provided through volumes. The environment variable 'DASHBOARDS_KERBEROS_PRINCIPAL' will be set. If not 'DASHBOARDS_KERBEROS_API_SERVICE_USERNAME' will be set.
-                        var principalName = Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_PRINCIPAL") ?? Environment.GetEnvironmentVariable("DASHBOARDS_KERBEROS_API_SERVICE_USERNAME");
-                        producerConfig.SaslKerberosPrincipal = principalName;
-                    }
+                    KafkaHelpers.SetKafkaConfigKerberos(producerConfig);
+                    
                     using (var p = new ProducerBuilder<Null, string>(producerConfig).Build()) {
                         while (true) {
                             try {

@@ -65,6 +65,9 @@ if ! [[ -z "${DASHBOARDS_KERBEROS_PUBLIC_URL}" ]]; then
         exit 1
     fi
 
+    # configuring krb5.conf files so acl-manager can communicate with the kerberos server and ensure the provided keytab is correct
+    configure_kerberos_server_in_krb5_file "$DASHBOARDS_KERBEROS_REALM" "$DASHBOARDS_KERBEROS_API_URL"
+
 else
     echo "INFO - Missing 'DASHBOARDS_KERBEROS_PUBLIC_URL' environment variable. Will not enable Kafka Kerberos SASL authentication"
 fi

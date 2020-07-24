@@ -35,6 +35,7 @@ LABEL Maintainer="Oliver Marco van Komen"
 
 ENV PROGRAM_HOME=/opt/DashboardServer
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV CONF_FILES=/conf
 
 # installing aspnet core runtime for ubuntu
 RUN apt-get update && \
@@ -47,7 +48,8 @@ RUN apt-get update && \
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get install -y krb5-user
 
 # Kafka SASL directory (keytab is placed here)
-RUN mkdir /sasl/
+RUN mkdir /sasl/ && mkdir ${CONF_FILES}
+COPY ./configuration/ ${CONF_FILES}/
 
 ENV KEYTAB_LOCATION=/sasl/dashboards.service.keytab
 
@@ -58,6 +60,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install krb5-use
     libsasl2-2 libsasl2-modules-gssapi-mit libsasl2-modules \
     && apt-get autoremove
 
+# Replacing Nuget Confluent librdkafka build (with redist dependency) with the manually installed librdkafka library.
 RUN rm -f ${PROGRAM_HOME}/runtimes/linux-x64/native/librdkafka.so
 COPY --from=build /usr/local/lib/librdkafka*.so* ${PROGRAM_HOME}/runtimes/linux-x64/native/
 
