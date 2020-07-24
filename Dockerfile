@@ -39,7 +39,7 @@ ENV CONF_FILES=/conf
 
 # installing aspnet core runtime for ubuntu
 RUN apt-get update && \
-    apt-get install -y wget && wget https://packages.microsoft.com/config/ubuntu/19.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    apt-get install -y wget && wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
     dpkg --purge packages-microsoft-prod && dpkg -i packages-microsoft-prod.deb && \
     apt-get update && \
     apt-get install aspnetcore-runtime-3.1 curl -y
