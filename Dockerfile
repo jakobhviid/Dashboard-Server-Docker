@@ -44,9 +44,6 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install aspnetcore-runtime-3.1 curl -y
 
-# installing kerberos client libraries
-RUN export DEBIAN_FRONTEND=noninteractive && apt-get install -y krb5-user
-
 # Kafka SASL directory (keytab is placed here)
 RUN mkdir /sasl/ && mkdir ${CONF_FILES}
 COPY ./configuration/ ${CONF_FILES}/
@@ -56,7 +53,7 @@ ENV KEYTAB_LOCATION=/sasl/dashboards.service.keytab
 COPY --from=build /build/out ${PROGRAM_HOME}
 
 # Installing dependencies for librdkafka
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install krb5-user kstart \
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get -y install krb5-user kstart \
     libsasl2-2 libsasl2-modules-gssapi-mit libsasl2-modules \
     && apt-get autoremove
 

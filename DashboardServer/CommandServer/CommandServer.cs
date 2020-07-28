@@ -21,7 +21,6 @@ namespace DashboardServer.CommandServer {
 
             KafkaHelpers.SetKafkaConfigKerberos(consumerConfig);
 
-
             using (var c = new ConsumerBuilder<Ignore, string>(consumerConfig).Build()) {
 
                 c.Subscribe(KafkaHelpers.RequestTopic);

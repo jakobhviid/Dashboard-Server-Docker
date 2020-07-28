@@ -37,7 +37,7 @@ namespace DashboardServer.Helpers {
 
             if (saslEnabled != null) {
                 config.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-                config.SaslKerberosServiceName = Environment.GetEnvironmentVariable("DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME");
+                config.SaslKerberosServiceName = Environment.GetEnvironmentVariable("DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME") ?? "kafka";
                 config.SaslKerberosKeytab = Environment.GetEnvironmentVariable("KEYTAB_LOCATION");
 
                 // If the principal has been provided through volumes. The environment variable 'DASHBOARDS_KERBEROS_PRINCIPAL' will be set. If not 'DASHBOARDS_KERBEROS_API_SERVICE_USERNAME' will be set.

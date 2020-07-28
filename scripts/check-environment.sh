@@ -63,8 +63,7 @@ if ! [[ -z "${DASHBOARDS_KERBEROS_PUBLIC_URL}" ]]; then
     fi
 
     if [ -z "$DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME" ]; then
-        echo -e "\e[1;31mERROR - 'DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME' has not been provided! \e[0m"
-        exit 1
+        echo "INFO - 'DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME' has not been provided. Defaulting to 'kafka' "
     fi
 
     # configuring krb5.conf files so acl-manager can communicate with the kerberos server and ensure the provided keytab is correct

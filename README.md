@@ -46,9 +46,9 @@ services:
   
 - `DASHBOARDS_KERBEROS_API_SERVICE_PASSWORD`: The password to use when fetching keytab on 'DASHBOARDS_KERBEROS_API_URL'.
   
-- `DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME`: This should be the principal name of the service keytab the kafka broker(s) uses. So if kafka uses a keytab with a principal name of 'kafka'. This environment variable should be 'kafka'.
+- `DASHBOARDS_BROKER_KERBEROS_SERVICE_NAME`: This should be the principal name of the service keytab the kafka broker(s) uses. So if kafka uses a keytab with a principal name of 'kafka'. This environment variable should be 'kafka'. It will default to 'kafka' if nothing is provided and kerberos is activated otherwise.
 
-- `DASHBOARDS_KERBEROS_PRINCIPAL`: The principal that dashboard server should use from the kerberos server. Required if you want to supply your own zookeeper keytab through volumes.
+- `DASHBOARDS_KERBEROS_PRINCIPAL`: The principal that dashboard server should use from the kerberos server. Required if you want to supply your own keytab through volumes.
 
 - `DASHBOARDS_PROCESSES_TO_START`: With this variable it is possible to define what processes inside the image should start. So if the value of this variable is 'overviewdata,commandserver' statsdata will not be sent. The available processes are 'overviewdata', 'statsdata' & 'commandserver'. By default all processes will be started and is the recommended setting.
 
@@ -67,3 +67,24 @@ When the image collects docker stats data it will only send data if these tolera
 - `DASHBOARDS_DISK_INPUT_TOLERANCE_BYTES`: Defines the tolerances of disk read in bytes. E.g. if set to 1000, the image will only send data if containers has read more than 1000 bytes since the last read. Defaults to 500.
 
 - `DASHBOARDS_DISK_OUTPUT_TOLERANCE_BYTES`: Defines the tolerances of disk write in bytes. E.g. if set to 1000, the image will only send data if containers has written more than 1000 bytes since the last read. Defaults to 500.
+
+### Kerberos example
+
+```
+version: "3"
+
+services:
+  server:
+    image: cfei/dashboard-server
+    container_name: dashboard-server
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DASHBOARDS_SERVER_NAME: CfeiServer1
+      DASHBOARDS_KAFKA_URL: 134.209.92.166:9093
+      DASHBOARDS_KERBEROS_PUBLIC_URL: 134.209.92.166
+      DASHBOARDS_KERBEROS_REALM: KAFKA.SECURE
+      DASHBOARDS_KERBEROS_API_URL: http://134.209.92.166:6000/get-keytab
+      DASHBOARDS_KERBEROS_API_SERVICE_USERNAME: dashboardserver
+      DASHBOARDS_KERBEROS_API_SERVICE_PASSWORD: dashboardServerPassword
+```
