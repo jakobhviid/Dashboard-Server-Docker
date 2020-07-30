@@ -4,6 +4,8 @@
 # Prevents errors in a pipeline from being hidden. So if any command fails, that return code will be used as the return code of the whole pipeline
 set -eo pipefail
 
+replace-librdkafka.sh
+
 check-environment.sh
 
 dotnet "$PROGRAM_HOME"/DashboardServer.dll
