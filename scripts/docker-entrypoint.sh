@@ -8,4 +8,4 @@ replace-librdkafka.sh
 
 check-environment.sh
 
-dotnet "$PROGRAM_HOME"/DashboardServer.dll
+dotnet "$DOTNET_PROGRAM_HOME"/DashboardServer.dll

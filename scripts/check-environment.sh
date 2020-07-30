@@ -1,7 +1,5 @@
 #!/bin/bash
 
-. helpers.sh
-
 DOCKER_SOCKET_PATH=${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
 
 # Check if socket exists (-S)
@@ -67,7 +65,7 @@ if ! [[ -z "${DASHBOARDS_KERBEROS_PUBLIC_URL}" ]]; then
     fi
 
     # configuring krb5.conf files so acl-manager can communicate with the kerberos server and ensure the provided keytab is correct
-    configure_kerberos_server_in_krb5_file "$DASHBOARDS_KERBEROS_REALM" "$DASHBOARDS_KERBEROS_PUBLIC_URL"
+    configure-krb5.sh "$DASHBOARDS_KERBEROS_REALM" "$DASHBOARDS_KERBEROS_PUBLIC_URL"
 
 else
     echo "INFO - Missing 'DASHBOARDS_KERBEROS_PUBLIC_URL' environment variable. Will not enable Kafka Kerberos SASL authentication"

@@ -20,9 +20,9 @@ FROM omvk97/dotnet-kerberos-auth
 
 LABEL Maintainer="Oliver Marco van Komen"
 
-ENV PROGRAM_HOME=/opt/DashboardServer
+ENV DOTNET_PROGRAM_HOME=/opt/DashboardServer
 
-COPY --from=build /build/out ${PROGRAM_HOME}
+COPY --from=build /build/out ${DOTNET_PROGRAM_HOME}
 
 # Copy necessary scripts + configuration
 COPY scripts /tmp/
