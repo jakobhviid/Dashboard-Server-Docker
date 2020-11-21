@@ -282,5 +282,27 @@ namespace DashboardServer.CommandServer {
                 ContainerIds = updatedContainers.Select(container => container.Id).ToArray()
             }, p);
         }
+
+        public async static Task InspectContainer(InspectContainerParameters parameters, IProducer<Null, string> p) {
+            try {
+                CancellationToken cancellation = new CancellationToken();
+                var inspectResponse = await client.Containers.InspectContainerAsync(parameters.ContainerId, cancellation);
+
+                await KafkaHelpers.SendMessageAsync(DockerUpdater.InspectTopic, inspectResponse, p);
+
+                // Send response
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse {
+                    ResponseStatusCode = 200,
+                    Message = ResponseMessageContracts.CONTAINER_INSPECTED,
+                    ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
+            } catch (DockerApiException ex) {
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse {
+                    ResponseStatusCode = 400,
+                    Message = ex.Message,
+                    ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
+            }
+        }
     }
 }
