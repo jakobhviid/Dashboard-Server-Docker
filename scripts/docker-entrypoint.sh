@@ -8,4 +8,7 @@ replace-librdkafka.sh
 
 check-environment.sh
 
-dotnet "$DOTNET_PROGRAM_HOME"/DashboardServer.dll
+#Should ideally never be triggered, DashboardServer.dll handles signals and is set as PID 1.
+trap 'exit 0' SIGTERM
+
+exec dotnet "$DOTNET_PROGRAM_HOME"/DashboardServer.dll
