@@ -11,6 +11,7 @@ using DashboardServer.Helpers;
 using DashboardServer.Updaters;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using Newtonsoft.Json;
 
 namespace DashboardServer.CommandServer {
     public static class ContainerAction {
@@ -287,8 +288,17 @@ namespace DashboardServer.CommandServer {
             try {
                 CancellationToken cancellation = new CancellationToken();
                 var inspectResponse = await client.Containers.InspectContainerAsync(parameters.ContainerId, cancellation);
+                var containerId = inspectResponse.ID.Substring(0, 10);
+                var inspectResponseStr = JsonConvert.SerializeObject(inspectResponse, Formatting.Indented);
 
-                await KafkaHelpers.SendMessageAsync(DockerUpdater.InspectTopic, inspectResponse, p);
+                var inspectContainerResponse = new InspectContainerResponse
+                {
+                    ServerName = KafkaHelpers.Servername,
+                    ContainerId = containerId,
+                    RawData = inspectResponseStr
+                };
+
+                await KafkaHelpers.SendMessageAsync(DockerUpdater.InspectTopic, inspectContainerResponse, p);
 
                 // Send response
                 await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse {
