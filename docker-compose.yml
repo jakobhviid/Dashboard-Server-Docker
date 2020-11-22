@@ -2,8 +2,8 @@ version: "3"
 
 services:
   server:
-    image: dst/dashboard-server
-    container_name: dashboard-server123
+    image: omvk97/dashboard-server
+    container_name: dashboard-server
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
