@@ -94,6 +94,10 @@ namespace DashboardServer.CommandServer {
                 case ContainerActionType.REFETCH_STATS:
                     await ContainerAction.RefetchStatsData(p);
                     break;
+                case ContainerActionType.INSPECT:
+                    var inspectParam = JsonConvert.DeserializeObject<InspectContainerParameters>(jsonParameterString);
+                    await ContainerAction.InspectContainer(inspectParam, p);
+                    break;
                 default:
                     await KafkaHelpers.SendMessageAsync(KafkaHelpers.ResponseTopic, new ContainerResponse { ResponseStatusCode = 404, Message = ResponseMessageContracts.METHOD_CALL_NOT_VIABLE }, p);
                     break;
