@@ -8,6 +8,7 @@ using Newtonsoft.Json.Serialization;
 namespace DashboardServer.Helpers {
     public class KafkaHelpers {
         public static string BootstrapServers = Environment.GetEnvironmentVariable("DASHBOARDS_KAFKA_URL") ?? "kafka1.cfei.dk:9092,kafka2.cfei.dk:9092,kafka3.cfei.dk:9092";
+        // public static string BootstrapServers = Environment.GetEnvironmentVariable("DASHBOARDS_KAFKA_URL") ?? "stage1.cfei.dk:9092,stage2.cfei.dk:9092,stage3.cfei.dk:9092";
         public static string Servername = Environment.GetEnvironmentVariable("DASHBOARDS_SERVER_NAME") ?? "PlaceholderServer";
         public static string SelfContainerId = Dns.GetHostName()[..10];
         public static readonly string RequestTopic = $"command-requests-{Servername}-{SelfContainerId}";
