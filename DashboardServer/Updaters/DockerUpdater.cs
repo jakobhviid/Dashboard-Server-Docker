@@ -118,8 +118,8 @@ namespace DashboardServer.Updaters {
 
             if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
             {
-                latestRead.CommandRequestTopic = KafkaHelpers.Servername + KafkaHelpers.SelfContainerId + "command-requests"; // servername plus this specific container id + command-requests
-                latestRead.CommandResponseTopic = KafkaHelpers.Servername + KafkaHelpers.SelfContainerId + "command-requests";
+                latestRead.CommandRequestTopic = KafkaHelpers.RequestTopic;
+                latestRead.CommandResponseTopic = KafkaHelpers.ResponseTopic;
             }
             if (containers != null)
                 latestRead.Containers = containers;
