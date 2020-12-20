@@ -42,6 +42,7 @@ namespace DashboardServer.Updaters {
             public IList<OverviewContainerData> Containers { get; set; }
             public string CommandRequestTopic { get; set; }
             public string CommandResponseTopic { get; set; }
+            public string Timestamp { get; set; }
         }
 
         private static async Task SendOverViewData(IProducer<Null, string> p) {
@@ -66,7 +67,8 @@ namespace DashboardServer.Updaters {
 
         public static OverViewData CreateOverViewData(IList<OverviewContainerData> containers = null) {
             OverViewData overViewData = new OverViewData {
-                Servername = KafkaHelpers.Servername
+                Servername = KafkaHelpers.Servername,
+                Timestamp = DateTime.Now.ToString("HH:mm dd/MM/yy")
             };
 
             if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
