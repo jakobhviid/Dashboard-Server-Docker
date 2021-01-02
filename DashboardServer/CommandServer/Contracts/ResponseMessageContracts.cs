@@ -11,5 +11,6 @@ namespace DashboardServer.CommandServer.Contracts {
         public const string OVERVIEW_DATA_REFETCHED = "Overview data manually refetched";
         public const string STATS_DATA_REFETCHED = "Stats data manually refetched";
         public const string CONTAINER_INSPECTED = "Container successfully inspected";
+        public const string LOGS_FETCHED = "Logs from container successfully fetched";
     }
 }

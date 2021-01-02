@@ -11,6 +11,7 @@ using Docker.DotNet.Models;
 namespace DashboardServer.Updaters {
     public class DockerUpdater {
         private static readonly DockerClient _client = new DockerClientConfiguration(new Uri("unix:///var/run/docker.sock")).CreateClient();
+        public const string LogTopic = "e9c03edc-40b8-4aa6-a72e-83f9ea0d1cea-log_info";
         public const string OverviewTopic = "f0e1e946-50d0-4a2b-b1a5-f21b92e09ac1-general_info";
         public const string StatsTopic = "33a325ce-b0c0-43a7-a846-4f46acdb367e-stats_info";
         public const string InspectTopic = "8f69fb50-ad11-4a9d-b4ab-21fba03053f2-inspect_info";

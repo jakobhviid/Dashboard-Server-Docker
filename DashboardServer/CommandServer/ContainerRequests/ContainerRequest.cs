@@ -13,7 +13,8 @@ namespace DashboardServer.CommandServer.ContainerRequests {
         UPDATE_CONFIGURATION,
         REFETCH_OVERVIEW,
         REFETCH_STATS,
-        INSPECT
+        INSPECT,
+        LOG
     }
     public struct ContainerRequest {
         [JsonProperty(Required = Required.Always)]

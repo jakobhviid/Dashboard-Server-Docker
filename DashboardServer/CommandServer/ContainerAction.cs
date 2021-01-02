@@ -314,5 +314,11 @@ namespace DashboardServer.CommandServer {
                 }, p);
             }
         }
+
+        public async static Task LogFromContainer(LogContainerParameters parameters, IProducer<Null, string> p)
+        {
+            //TODO: Need to add a log function.
+            throw new NotImplementedException();
+        }
     }
 }

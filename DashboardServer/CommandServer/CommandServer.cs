@@ -98,6 +98,10 @@ namespace DashboardServer.CommandServer {
                     var inspectParam = JsonConvert.DeserializeObject<InspectContainerParameters>(jsonParameterString);
                     await ContainerAction.InspectContainer(inspectParam, p);
                     break;
+                case ContainerActionType.LOG:
+                    var logParam = JsonConvert.DeserializeObject<LogContainerParameters>(jsonParameterString);
+                    await ContainerAction.LogFromContainer(logParam, p);
+                    break;
                 default:
                     await KafkaHelpers.SendMessageAsync(KafkaHelpers.ResponseTopic, new ContainerResponse { ResponseStatusCode = 404, Message = ResponseMessageContracts.METHOD_CALL_NOT_VIABLE }, p);
                     break;
