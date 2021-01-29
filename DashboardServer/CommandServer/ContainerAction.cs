@@ -11,6 +11,7 @@ using DashboardServer.Helpers;
 using DashboardServer.Updaters;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using Newtonsoft.Json;
 
 namespace DashboardServer.CommandServer {
     public static class ContainerAction {
@@ -281,6 +282,37 @@ namespace DashboardServer.CommandServer {
                 Message = ResponseMessageContracts.STATS_DATA_REFETCHED,
                 ContainerIds = updatedContainers.Select(container => container.Id).ToArray()
             }, p);
+        }
+
+        public async static Task InspectContainer(InspectContainerParameters parameters, IProducer<Null, string> p) {
+            try {
+                CancellationToken cancellation = new CancellationToken();
+                var inspectResponse = await client.Containers.InspectContainerAsync(parameters.ContainerId, cancellation);
+                var containerId = inspectResponse.ID.Substring(0, 10);
+                var inspectResponseStr = JsonConvert.SerializeObject(inspectResponse, Formatting.Indented);
+
+                var inspectContainerResponse = new InspectContainerResponse
+                {
+                    ServerName = KafkaHelpers.Servername,
+                    ContainerId = containerId,
+                    RawData = inspectResponseStr
+                };
+
+                await KafkaHelpers.SendMessageAsync(DockerUpdater.InspectTopic, inspectContainerResponse, p);
+
+                // Send response
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse {
+                    ResponseStatusCode = 200,
+                    Message = ResponseMessageContracts.CONTAINER_INSPECTED,
+                    ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
+            } catch (DockerApiException ex) {
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse {
+                    ResponseStatusCode = 400,
+                    Message = ex.Message,
+                    ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
+            }
         }
     }
 }

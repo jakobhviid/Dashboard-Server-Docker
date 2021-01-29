@@ -10,5 +10,6 @@ namespace DashboardServer.CommandServer.Contracts {
         public const string METHOD_CALL_NOT_VIABLE = "Method call not viable. Contact maintainer for possilble implementation";
         public const string OVERVIEW_DATA_REFETCHED = "Overview data manually refetched";
         public const string STATS_DATA_REFETCHED = "Stats data manually refetched";
+        public const string CONTAINER_INSPECTED = "Container successfully inspected";
     }
 }
