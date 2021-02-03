@@ -49,9 +49,18 @@ namespace DashboardServer.Helpers
         {
             // The container does not have health data
             if (!containerStatus.ToLower().Contains("health"))return null;
-            var indexOfHealthSubString = containerStatus.IndexOf("health");
-            var indexOfLastParentheses = containerStatus.LastIndexOf(")");
-            return containerStatus[indexOfHealthSubString..indexOfLastParentheses];
+            var indexOfLastOpeningParentheses = containerStatus.LastIndexOf("(");
+            indexOfLastOpeningParentheses++; // Or else the index will be the first "(" instead of the index after
+            var indexOfLastClosingParentheses = containerStatus.LastIndexOf(")");
+            var substring = containerStatus[indexOfLastOpeningParentheses..indexOfLastClosingParentheses];
+            Console.WriteLine(substring);
+            return substring switch
+            {
+                "unhealthy" => "unhealthy",
+                "healthy" => "healthy",
+                "health: starting" => "starting",
+                _ => null
+            };
         }
         public static bool StatsContainersAreDifferent(IList<StatsContainerData> lastContainerReads, IList<StatsContainerData> currentContainerReads)
         {
