@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
@@ -14,8 +15,12 @@ using Docker.DotNet.Models;
 using Newtonsoft.Json;
 
 namespace DashboardServer.CommandServer {
-    public static class ContainerAction {
-        private static readonly DockerClient client = new DockerClientConfiguration(new Uri("unix:///var/run/docker.sock")).CreateClient();
+    public static class ContainerAction
+    {
+        private static readonly Uri DockerSocketUri = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? new Uri("npipe://./pipe/docker_engine")
+                : new Uri("unix:///var/run/docker.sock");
+        private static readonly DockerClient client = new DockerClientConfiguration(DockerSocketUri).CreateClient();
         private static string _responseTopic = KafkaHelpers.ResponseTopic;
         public async static Task RunNewContainer(RunNewContainerParameters parameters, IProducer<Null, string> p) {
             try {

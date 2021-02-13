@@ -9,12 +9,23 @@ namespace DashboardServer {
         static async Task Main(string[] args) {
             
             CancellationTokenSource cts = new CancellationTokenSource();
+
+            //Handle sigterm signals
+            AppDomain.CurrentDomain.ProcessExit += (_, e) => {
+                cts.Cancel();
+                Environment.ExitCode = 0;
+                return;
+            };
+
+            //Handle sigint signals
             Console.CancelKeyPress += (_, e) => {
                 // when CTRL C is pressed, terminate the process. Otherwise keep it going
                 e.Cancel = true;
                 cts.Cancel();
-                System.Environment.Exit(0);
+                Environment.ExitCode = 0;
+                return;
             };
+
             var processesToStart = (Environment.GetEnvironmentVariable("DASHBOARDS_PROCESSES_TO_START") ?? "overviewdata,statsdata,commandserver").Split(",");
 
             IList<Task> tasks = new List<Task>();
@@ -32,5 +43,6 @@ namespace DashboardServer {
             Console.WriteLine("Started Docker Updaters");
             await Task.WhenAll(tasks); // Don't exit program
         }
+
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using DashboardServer.Helpers;
@@ -11,6 +12,10 @@ using Docker.DotNet.Models;
 namespace DashboardServer.Updaters {
     public class DockerUpdater {
         private static readonly DockerClient _client = new DockerClientConfiguration(new Uri("unix:///var/run/docker.sock")).CreateClient();
+        private static readonly Uri DockerSocketUri = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? new Uri("npipe://./pipe/docker_engine")
+            : new Uri("unix:///var/run/docker.sock");
+        private static readonly DockerClient _client = new DockerClientConfiguration(DockerSocketUri).CreateClient();
         public const string LogTopic = "e9c03edc-40b8-4aa6-a72e-83f9ea0d1cea-log_info";
         public const string OverviewTopic = "f0e1e946-50d0-4a2b-b1a5-f21b92e09ac1-general_info";
         public const string StatsTopic = "33a325ce-b0c0-43a7-a846-4f46acdb367e-stats_info";
@@ -43,6 +48,7 @@ namespace DashboardServer.Updaters {
             public IList<OverviewContainerData> Containers { get; set; }
             public string CommandRequestTopic { get; set; }
             public string CommandResponseTopic { get; set; }
+            public string Timestamp { get; set; }
         }
 
         private static async Task SendOverViewData(IProducer<Null, string> p) {
@@ -67,7 +73,8 @@ namespace DashboardServer.Updaters {
 
         public static OverViewData CreateOverViewData(IList<OverviewContainerData> containers = null) {
             OverViewData overViewData = new OverViewData {
-                Servername = KafkaHelpers.Servername
+                Servername = KafkaHelpers.Servername,
+                Timestamp = DateTime.Now.ToString("HH:mm dd/MM/yy")
             };
 
             if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
@@ -119,8 +126,8 @@ namespace DashboardServer.Updaters {
 
             if (_processesToStart.Contains("commandserver")) // If command server is active on this container, provide the relevant topics
             {
-                latestRead.CommandRequestTopic = KafkaHelpers.Servername + KafkaHelpers.SelfContainerId + "command-requests"; // servername plus this specific container id + command-requests
-                latestRead.CommandResponseTopic = KafkaHelpers.Servername + KafkaHelpers.SelfContainerId + "command-requests";
+                latestRead.CommandRequestTopic = KafkaHelpers.RequestTopic;
+                latestRead.CommandResponseTopic = KafkaHelpers.ResponseTopic;
             }
             if (containers != null)
                 latestRead.Containers = containers;
