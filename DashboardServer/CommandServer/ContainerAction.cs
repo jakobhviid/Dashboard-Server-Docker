@@ -322,8 +322,48 @@ namespace DashboardServer.CommandServer {
 
         public async static Task LogFromContainer(LogContainerParameters parameters, IProducer<Null, string> p)
         {
-            //TODO: Need to add a log function.
-            throw new NotImplementedException();
+            try {
+                Console.WriteLine("TTTTTTT\n \n \n \n TTTTTTTTTTTT");
+                CancellationToken cancellation = new CancellationToken();
+
+                var logParams = new ContainerLogsParameters()
+                {
+                    Tail = "30",
+                    Follow = false,
+                };
+                Console.WriteLine("Before Stream\n \n \n \n Before Stream");
+                Console.WriteLine(parameters.ContainerId);
+                var logStream = await
+                    client.Containers.GetContainerLogsAsync(parameters.ContainerId, false, logParams, cancellation);
+                Console.WriteLine("After Stream\n \n \n \n After Stream");
+                var logStdOut = await logStream.ReadOutputToEndAsync(cancellation);
+                Console.WriteLine("res\n\n\n\n");
+                Console.WriteLine(logStdOut.stdout);
+                Console.WriteLine("res\n\n\n\n");
+                var logResponseStr = JsonConvert.SerializeObject(logStdOut.stdout, Formatting.Indented);
+
+                var logContainerResponse = new LogContainerResponse
+                {
+                    ServerName = KafkaHelpers.Servername,
+                    ContainerId = parameters.ContainerId,
+                    RawData = logResponseStr
+                };
+
+                await KafkaHelpers.SendMessageAsync(DockerUpdater.LogTopic, logContainerResponse, p);
+
+                // Send response
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse {
+                    ResponseStatusCode = 200,
+                    Message = ResponseMessageContracts.LOGS_FETCHED,
+                    ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
+            } catch (DockerApiException ex) {
+                await KafkaHelpers.SendMessageAsync(_responseTopic, new ContainerResponse {
+                    ResponseStatusCode = 400,
+                    Message = ex.Message,
+                    ContainerIds = new string[] { parameters.ContainerId }
+                }, p);
+            }
         }
     }
 }
