@@ -11,7 +11,6 @@ using Docker.DotNet.Models;
 
 namespace DashboardServer.Updaters {
     public class DockerUpdater {
-        private static readonly DockerClient _client = new DockerClientConfiguration(new Uri("unix:///var/run/docker.sock")).CreateClient();
         private static readonly Uri DockerSocketUri = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? new Uri("npipe://./pipe/docker_engine")
             : new Uri("unix:///var/run/docker.sock");
