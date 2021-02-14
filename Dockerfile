@@ -7,8 +7,7 @@ ARG VERSION=1.0.0
 WORKDIR /build/
 
 COPY ./DashboardServer/DashboardServer.csproj ./DashboardServer.csproj
-RUN dotnet nuget add source https://ci.appveyor.com/nuget/docker-dotnet-hojfmn6hoed7 && \
-    dotnet restore ./DashboardServer.csproj
+RUN dotnet restore ./DashboardServer.csproj
 
 COPY ./DashboardServer ./
 
