@@ -14,9 +14,8 @@ COPY ./DashboardServer ./
 RUN dotnet build -c ${BUILDCONFIG} -o out && dotnet publish ./DashboardServer.csproj -c ${BUILDCONFIG} -o out /p:Version=${VERSION}
 
 # ---- final stage ----
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1
+FROM omvk97/dotnet-kerberos-auth
 
-LABEL Maintainer="Oliver Marco van Komen"
 
 ENV DOTNET_PROGRAM_HOME=/opt/DashboardServer
 
