@@ -14,9 +14,9 @@ COPY ./DashboardServer ./
 RUN dotnet build -c ${BUILDCONFIG} -o out && dotnet publish ./DashboardServer.csproj -c ${BUILDCONFIG} -o out /p:Version=${VERSION}
 
 # ---- final stage ----
-#FROM omvk97/dotnet-kerberos-auth
+FROM omvk97/dotnet-kerberos-auth
 
-FROM mcr.microsoft.com/dotnet/runtime:3.1-buster-slim
+#FROM mcr.microsoft.com/dotnet/runtime:3.1-buster-slim
 
 RUN aspnetcore_version=3.1.12 \
     && curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/$aspnetcore_version/aspnetcore-runtime-$aspnetcore_version-linux-arm64.tar.gz \
