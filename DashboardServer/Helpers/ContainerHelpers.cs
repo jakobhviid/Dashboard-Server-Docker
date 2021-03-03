@@ -53,7 +53,6 @@ namespace DashboardServer.Helpers
             indexOfLastOpeningParentheses++; // Or else the index will be the first "(" instead of the index after
             var indexOfLastClosingParentheses = containerStatus.LastIndexOf(")");
             var substring = containerStatus[indexOfLastOpeningParentheses..indexOfLastClosingParentheses];
-            Console.WriteLine(substring);
             return substring switch
             {
                 "unhealthy" => "unhealthy",

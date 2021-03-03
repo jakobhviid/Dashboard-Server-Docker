@@ -7,16 +7,14 @@ ARG VERSION=1.0.0
 WORKDIR /build/
 
 COPY ./DashboardServer/DashboardServer.csproj ./DashboardServer.csproj
-RUN dotnet nuget add source https://ci.appveyor.com/nuget/docker-dotnet-hojfmn6hoed7 && \
-    dotnet restore ./DashboardServer.csproj
+RUN dotnet restore ./DashboardServer.csproj
 
 COPY ./DashboardServer ./
 
 RUN dotnet build -c ${BUILDCONFIG} -o out && dotnet publish ./DashboardServer.csproj -c ${BUILDCONFIG} -o out /p:Version=${VERSION}
 
 # ---- final stage ----
-
-FROM omvk97/dotnet-kerberos-auth
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1
 
 LABEL Maintainer="Oliver Marco van Komen"
 
